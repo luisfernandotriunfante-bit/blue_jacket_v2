@@ -37,33 +37,40 @@ export function PanelSectionHeader({ eyebrow, title, description, action }: {
   );
 }
 
+// Matches the "Painel PEX" KPI card model exactly: label row (with an
+// optional attention badge), a big mono value with an inline muted
+// suffix baseline-aligned next to it, an optional thin progress bar
+// (no text riding on it — the suffix already carries that), and an
+// optional small caption underneath for the precise figure.
 export type PanelKpiProps = {
   label: string;
   value: ReactNode;
-  detail?: ReactNode;
+  suffix?: ReactNode;
+  caption?: ReactNode;
   progress?: number | null;
-  progressLabel?: string;
   tone?: 'default' | 'attention';
+  badge?: string;
 };
 
-export function PanelKpi({ label, value, detail, progress, progressLabel, tone = 'default' }: PanelKpiProps) {
+export function PanelKpi({ label, value, suffix, caption, progress, tone = 'default', badge }: PanelKpiProps) {
   const hasProgress = progress !== undefined;
   const safeProgress = progress == null ? null : Math.max(0, Math.min(1, progress));
   return (
     <div className="panel-kpi" data-tone={tone}>
-      <div className="panel-kpi-head">
+      <div className="panel-kpi-top">
         <span className="panel-kpi-label">{label}</span>
+        {badge ? <span className="panel-kpi-badge">{badge}</span> : null}
       </div>
-      <span className="panel-kpi-value">{value}</span>
-      {detail ? <span className="panel-kpi-detail">{detail}</span> : null}
+      <div className="panel-kpi-value-row">
+        <span className="panel-kpi-value">{value}</span>
+        {suffix ? <span className="panel-kpi-suffix">{suffix}</span> : null}
+      </div>
       {hasProgress ? (
-        <>
-          {progressLabel ? <span className="panel-kpi-progress-copy">{progressLabel}</span> : null}
-          <div className={`panel-kpi-progress${safeProgress === null ? ' is-empty' : ''}`}>
-            <span style={{ width: safeProgress === null ? '0%' : `${safeProgress * 100}%` }} />
-          </div>
-        </>
+        <div className={`panel-kpi-progress${safeProgress === null ? ' is-empty' : ''}`}>
+          <span style={{ width: safeProgress === null ? '0%' : `${safeProgress * 100}%` }} />
+        </div>
       ) : null}
+      {caption ? <span className="panel-kpi-caption">{caption}</span> : null}
     </div>
   );
 }
