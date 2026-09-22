@@ -1,0 +1,117 @@
+/*
+ * Blue Jacket — design tokens (v2.1).
+ * Single source of truth, aligned to the "Painel PEX" visual reference.
+ * There are exactly THREE radii in the whole app — --bj-radius-card,
+ * --bj-radius-control, --bj-radius-pill — and every component picks the
+ * one that matches its own kind. Nothing here is overridden by a later
+ * stylesheet; if a value needs to change, it changes here.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bj-bg: #0a0a0a;
+  --bj-bg-elevated: #0d0d0e;
+  --bj-card: #131314;
+  --bj-card-soft: rgba(0, 0, 0, 0.14);
+  --bj-border: #232324;
+  --bj-separator: #1a1a1b;
+  --bj-separator-soft: #1e1e1f;
+  --bj-overlay: rgba(0, 0, 0, 0.72);
+
+  /* Brand + semantic colors */
+  --bj-red: #e11429;
+  --bj-red-soft: rgba(225, 20, 41, 0.1);
+  --bj-red-glow: rgba(225, 20, 41, 0.16);
+  --bj-blue: #4d8dff;
+  --bj-blue-soft: rgba(77, 141, 255, 0.12);
+  --bj-green: #34c77b;
+  --bj-green-soft: rgba(52, 199, 123, 0.12);
+  --bj-purple: #8b5cf6;
+  --bj-purple-soft: rgba(139, 92, 246, 0.12);
+  --bj-amber: #f5b942;
+  --bj-amber-soft: rgba(245, 185, 66, 0.12);
+
+  /* Text */
+  --bj-text: #f2f2f0;
+  --bj-text-strong: #f5f5f3;
+  --bj-text-dim: #c9c9cb;
+  --bj-muted: #8e8e90;
+  --bj-muted-2: #6a6a6c;
+  --bj-faint: #55555a;
+
+  /* Typography — three families, each with one job */
+  --bj-font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --bj-font: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bj-font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --bj-font-caption: 0.6875rem;
+  --bj-font-label: 0.8125rem;
+  --bj-font-body-sm: 0.8125rem;
+  --bj-font-body: 0.875rem;
+  --bj-font-subtitle: 0.95rem;
+  --bj-font-title: 1.7rem;
+  --bj-font-kpi: clamp(1.05rem, 1.5vw, 1.65rem);
+  --bj-weight-regular: 400;
+  --bj-weight-medium: 500;
+  --bj-weight-semibold: 600;
+  --bj-weight-bold: 700;
+
+  /* Spacing scale — every gap/padding in the app pulls from this list only */
+  --bj-space-1: 4px;
+  --bj-space-2: 8px;
+  --bj-space-3: 12px;
+  --bj-space-4: 16px;
+  --bj-space-5: 18px;
+  --bj-space-6: 22px;
+  --bj-space-7: 26px;
+  --bj-space-8: 30px;
+  --bj-space-10: 40px;
+
+  /* Shape — exactly three radii; each component kind uses only its own */
+  --bj-radius-card: 14px;
+  --bj-radius-control: 9px;
+  --bj-radius-pill: 999px;
+  --bj-border-width: 1px;
+  --bj-shadow: none;
+
+  /* Layers */
+  --bj-layer-tabs: 30;
+  --bj-layer-sidebar: 1000;
+  --bj-layer-trigger: 1010;
+  --bj-layer-overlay: 990;
+
+  /* Layout */
+  --bj-content-max: 1600px;
+  --bj-sidebar-width: 232px;
+  --bj-header-height: 64px;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bj-bg);
+  color: var(--bj-text);
+  font-family: var(--bj-font);
+  font-size: var(--bj-font-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--bj-red); text-decoration: none; }
+a:hover { color: var(--bj-text); }
+::selection { background: var(--bj-red); color: #fff; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+button:focus-visible, a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--bj-blue);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
+}
