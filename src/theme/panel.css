@@ -121,9 +121,32 @@
 
 .panel-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--bj-space-3); margin-bottom: var(--bj-space-4); }
 
+/* Row-level actions inside a table cell — marking chips (Normal/PEX,
+ * Marcar como top) and the trailing remove control share this layout. */
+.panel-row-actions { display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+.panel-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--bj-radius-control);
+  border: var(--bj-border-width) solid var(--bj-border);
+  background: transparent;
+  color: var(--bj-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+.panel-icon-button:hover { border-color: var(--bj-red); color: var(--bj-red); background: var(--bj-red-soft); }
+
+/* A field edited inline inside a table cell (e.g. the meta column on the
+ * RCA registration table) stays compact instead of filling the cell. */
+.panel-input-inline { min-height: 32px; padding: 6px 10px; width: 140px; }
+
 .panel-table-wrap { border: var(--bj-border-width) solid var(--bj-border); border-radius: var(--bj-radius-card); overflow: auto; }
 .panel-table { width: 100%; border-collapse: collapse; font-size: var(--bj-font-body-sm); }
-.panel-table th, .panel-table td { padding: var(--bj-space-3) var(--bj-space-4); text-align: left; border-bottom: var(--bj-border-width) solid var(--bj-separator); }
+.panel-table th, .panel-table td { padding: var(--bj-space-3) var(--bj-space-4); text-align: left; border-bottom: var(--bj-border-width) solid var(--bj-separator); vertical-align: middle; }
 .panel-table th { font-family: var(--bj-font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--bj-muted-2); font-weight: var(--bj-weight-medium); }
 .panel-table td { font-family: var(--bj-font-mono); color: var(--bj-text-dim); }
 .panel-table tbody tr:last-child td { border-bottom: 0; }
