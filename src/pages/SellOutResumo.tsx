@@ -1,10 +1,7 @@
 import { PanelAlert, PanelCard, PanelKpi, PanelSectionHeader } from '../components/Panel';
 import { DailyMovementWindow } from '../components/charts/DailyMovementWindow';
 import { buildMockDailyRows, buildMockLineRows, buildMockTotals } from '../lib/mockSellOut';
-
-const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-const number = new Intl.NumberFormat('pt-BR');
-const percent = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 1 });
+import { compactBRL, currencyFmt, numberFmt, percentFmt } from '../lib/format';
 
 export function SellOutResumo() {
   const dailyRows = buildMockDailyRows();
@@ -19,42 +16,45 @@ export function SellOutResumo() {
         mesma estrutura do sistema atual. Os números abaixo são simulados; nenhum motor real está conectado ainda.
       </PanelAlert>
 
-      <div className="panel-stat-grid" style={{ gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' }}>
+      <div className="panel-stat-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
         <PanelKpi
           label="Sell Out realizado"
-          value={currency.format(totals.realized)}
+          value={compactBRL(totals.realized)}
+          suffix={`de ${compactBRL(totals.sellOutTarget)}`}
           progress={totals.salesAchievement}
-          progressLabel={`${percent.format(totals.salesAchievement)} da meta`}
+          caption={currencyFmt.format(totals.realized)}
         />
         <PanelKpi
           label="Meta T&C"
-          value={currency.format(totals.sellOutTarget)}
+          value={compactBRL(totals.sellOutTarget)}
+          suffix={`${percentFmt.format(totals.salesAchievement)} atingido`}
           progress={totals.salesAchievement}
-          progressLabel={`${percent.format(totals.salesAchievement)} atingido`}
+          caption={currencyFmt.format(totals.sellOutTarget)}
         />
         <PanelKpi
           label="Faturado"
-          value={currency.format(totals.invoiced)}
+          value={compactBRL(totals.invoiced)}
+          suffix={totals.invoicedShare === null ? 'sem Sell Out' : `${percentFmt.format(totals.invoicedShare)} do Sell Out`}
           progress={totals.invoicedShare}
-          progressLabel={totals.invoicedShare === null ? 'Sem Sell Out realizado' : `${percent.format(totals.invoicedShare)} do Sell Out`}
+          caption={currencyFmt.format(totals.invoiced)}
         />
         <PanelKpi
           label="Clientes positivados"
-          value={number.format(totals.positiveCustomers)}
+          value={numberFmt.format(totals.positiveCustomers)}
+          suffix={`de ${numberFmt.format(totals.positivityTarget)}`}
           progress={totals.positivityAchievement}
-          progressLabel={`${percent.format(totals.positivityAchievement)} da meta`}
         />
         <PanelKpi
           label="Meta de positivação"
-          value={number.format(totals.positivityTarget)}
+          value={numberFmt.format(totals.positivityTarget)}
+          suffix={`${percentFmt.format(totals.positivityAchievement)} atingido`}
           progress={totals.positivityAchievement}
-          progressLabel={`${percent.format(totals.positivityAchievement)} atingido`}
         />
         <PanelKpi
           label="Positivação faturada"
-          value={number.format(totals.invoicedPositiveCustomers)}
+          value={numberFmt.format(totals.invoicedPositiveCustomers)}
+          suffix={`de ${numberFmt.format(totals.positivityTarget)}`}
           progress={totals.invoicedPositivityAchievement}
-          progressLabel={`${percent.format(totals.invoicedPositivityAchievement)} atingido`}
         />
       </div>
 
@@ -77,15 +77,15 @@ export function SellOutResumo() {
           title="Resultado das linhas comerciais"
           description="Cada linha de produto e sua participação percentual sobre o total de Sell Out do período."
         />
-        <div className="panel-stat-grid" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
+        <div className="panel-stat-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
           {lineRows.map(row => (
             <PanelKpi
               key={row.line}
               label={row.line}
-              value={currency.format(row.realized)}
+              value={compactBRL(row.realized)}
+              suffix={`${percentFmt.format(row.share)} do total`}
               progress={row.share}
-              progressLabel={`${percent.format(row.share)} do Sell Out`}
-              detail={`Faturado: ${currency.format(row.invoiced)} · A faturar: ${currency.format(row.toInvoice)}`}
+              caption={`Fat: ${compactBRL(row.invoiced)} · A fat: ${compactBRL(row.toInvoice)}`}
             />
           ))}
         </div>
