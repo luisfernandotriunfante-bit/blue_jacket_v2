@@ -27,23 +27,46 @@
 
 .panel-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--bj-space-4); }
 
+/* KPI card — ported 1:1 from the "Painel PEX" reference: 20px/22px
+ * padding, a 12px label row, a big mono value baseline-aligned with a
+ * muted inline suffix, and a thin 5px progress bar with no text riding
+ * on it (the suffix already carries the percentage). */
 .panel-kpi {
   position: relative;
   background: var(--bj-card);
   border: var(--bj-border-width) solid var(--bj-border);
   border-radius: var(--bj-radius-card);
-  padding: var(--bj-space-5);
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  gap: var(--bj-space-3);
+  gap: 10px;
   min-height: 128px;
 }
-.panel-kpi-head { display: flex; align-items: center; justify-content: space-between; gap: var(--bj-space-2); }
+.panel-kpi-top { display: flex; align-items: center; justify-content: space-between; gap: var(--bj-space-2); }
 .panel-kpi-label { font-size: 12px; font-weight: var(--bj-weight-semibold); color: var(--bj-muted); }
-.panel-kpi-value { font-family: var(--bj-font-mono); font-size: var(--bj-font-kpi); font-weight: var(--bj-weight-semibold); letter-spacing: -0.01em; color: var(--bj-text-strong); overflow-wrap: anywhere; white-space: normal; }
-.panel-kpi-detail { font-size: var(--bj-font-caption); color: var(--bj-muted-2); }
-.panel-kpi-progress-copy { margin-top: auto; font-size: 11px; font-weight: var(--bj-weight-semibold); color: var(--bj-muted); text-align: right; }
-.panel-kpi-progress { width: 100%; height: 5px; border-radius: var(--bj-radius-pill); background: var(--bj-border); overflow: hidden; }
+.panel-kpi-badge {
+  font-size: 10px;
+  font-weight: var(--bj-weight-bold);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--bj-red);
+  background: var(--bj-red-soft);
+  padding: 3px 8px;
+  border-radius: var(--bj-radius-pill);
+}
+.panel-kpi-value-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.panel-kpi-value {
+  font-family: var(--bj-font-mono);
+  font-size: clamp(1.3rem, 2.1vw, 2.125rem);
+  font-weight: var(--bj-weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--bj-text-strong);
+  overflow-wrap: anywhere;
+}
+.panel-kpi[data-tone="attention"] .panel-kpi-value { color: var(--bj-red); }
+.panel-kpi-suffix { font-size: 12.5px; color: var(--bj-muted-2); }
+.panel-kpi-caption { font-family: var(--bj-font-mono); font-size: 11px; color: var(--bj-muted-2); }
+.panel-kpi-progress { width: 100%; height: 5px; border-radius: 3px; background: var(--bj-border); overflow: hidden; }
 .panel-kpi-progress > span { display: block; height: 100%; border-radius: inherit; background: var(--bj-red); transition: width 0.2s ease; }
 .panel-kpi-progress.is-empty > span { display: none; }
 .panel-kpi[data-tone="attention"] { border-color: rgba(225, 20, 41, 0.35); }
