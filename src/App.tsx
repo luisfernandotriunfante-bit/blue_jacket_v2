@@ -25,9 +25,9 @@ function PlaceholderPage({ section, tab }: { section: string; tab: string }) {
           description="Este é o esqueleto visual do Blue Jacket v2: ainda não há motor nem dado real conectado aqui. A ideia é validar layout, navegação e consistência antes de desenhar os motores."
         />
         <div className="panel-stat-grid">
-          <PanelKpi label="Indicador A" value="—" detail="Aguardando motor" />
-          <PanelKpi label="Indicador B" value="—" detail="Aguardando motor" />
-          <PanelKpi label="Indicador C" value="—" detail="Aguardando motor" />
+          <PanelKpi label="Indicador A" value="—" caption="Aguardando motor" />
+          <PanelKpi label="Indicador B" value="—" caption="Aguardando motor" />
+          <PanelKpi label="Indicador C" value="—" caption="Aguardando motor" />
         </div>
       </PanelCard>
       <PanelAlert tone="info">
