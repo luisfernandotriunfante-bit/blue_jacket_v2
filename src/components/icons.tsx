@@ -22,3 +22,6 @@ export function IconDoc({ size = 18 }: IconProps) {
 export function IconGear({ size = 18 }: IconProps) {
   return <svg width={size} height={size} viewBox="0 0 24 24" {...base}><circle cx="12" cy="12" r="3" /><path d="M19.4 13a7.8 7.8 0 000-2l2-1.6-2-3.4-2.4 1a7.8 7.8 0 00-1.7-1L15 3h-6l-.3 2.4a7.8 7.8 0 00-1.7 1l-2.4-1-2 3.4L4.6 11a7.8 7.8 0 000 2l-2 1.6 2 3.4 2.4-1a7.8 7.8 0 001.7 1L9 21h6l.3-2.4a7.8 7.8 0 001.7-1l2.4 1 2-3.4z" /></svg>;
 }
+export function IconTrash({ size = 18 }: IconProps) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" {...base}><path d="M4 7h16" /><path d="M9 7V4h6v3" /><path d="M6 7l1 13h10l1-13" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>;
+}
