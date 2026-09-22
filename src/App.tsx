@@ -4,13 +4,20 @@ import { Header, TopTabs, Content } from './components/Shell';
 import { PanelPage, PanelCard, PanelSectionHeader, PanelKpi, PanelAlert } from './components/Panel';
 import { IconBars, IconBox, IconDoc, IconGear, IconGrid, IconPulse, IconUsers } from './components/icons';
 import { SellOutResumo } from './pages/SellOutResumo';
+import { AdminCadastros } from './pages/admin/Cadastros';
+import { AdminMetas } from './pages/admin/Metas';
+import { EstoqueProdutos } from './pages/estoque/Produtos';
+import { EstoqueLancamentos } from './pages/estoque/Lancamentos';
+import { ClientesLista } from './pages/clientes/Clientes';
+import { ClientesTopVarejistas } from './pages/clientes/TopVarejistas';
+import { CURRENT_COMPETENCE, formatCompetencia } from './lib/competencia';
 
 const SECTIONS = [
   { id: 'sell-out', label: 'Sell Out', icon: <IconPulse />, tabs: ['Resumo', 'Redes', 'Gerencial'] },
   { id: 'pex', label: 'PEX', icon: <IconBars />, tabs: ['Indicadores'] },
   { id: 'estoque', label: 'Estoque', icon: <IconBox />, tabs: ['Visão Geral', 'Produtos', 'Lançamentos', 'Entradas e Saídas'] },
   { id: 'atividades', label: 'Atividades', icon: <IconGrid />, tabs: ['Visão Geral'] },
-  { id: 'clientes', label: 'Clientes e Sortimento', icon: <IconUsers />, tabs: ['Visão Geral'] },
+  { id: 'clientes', label: 'Clientes e Sortimento', icon: <IconUsers />, tabs: ['Visão Geral', 'Clientes', 'Top Varejistas'] },
   { id: 'documentos', label: 'Documentos', icon: <IconDoc />, tabs: [] as string[] },
   { id: 'administracao', label: 'Administração', icon: <IconGear />, tabs: ['Bases', 'Cadastros', 'Metas', 'Competências', 'Auditoria'] },
 ] as const;
@@ -37,6 +44,20 @@ function PlaceholderPage({ section, tab }: { section: string; tab: string }) {
   );
 }
 
+// Dispatch explícito por seção+aba: cada combinação com dado manual já
+// definido ganha sua própria página; o resto continua na casca visual até
+// o motor daquela área ser desenhado.
+function renderPage(sectionId: string, sectionLabel: string, tab: string) {
+  if (sectionId === 'sell-out' && tab === 'Resumo') return <SellOutResumo />;
+  if (sectionId === 'administracao' && tab === 'Cadastros') return <AdminCadastros />;
+  if (sectionId === 'administracao' && tab === 'Metas') return <AdminMetas />;
+  if (sectionId === 'estoque' && tab === 'Produtos') return <EstoqueProdutos />;
+  if (sectionId === 'estoque' && tab === 'Lançamentos') return <EstoqueLancamentos />;
+  if (sectionId === 'clientes' && tab === 'Clientes') return <ClientesLista />;
+  if (sectionId === 'clientes' && tab === 'Top Varejistas') return <ClientesTopVarejistas />;
+  return <PlaceholderPage section={sectionLabel} tab={tab} />;
+}
+
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sectionId, setSectionId] = useState<(typeof SECTIONS)[number]['id']>('sell-out');
@@ -55,20 +76,18 @@ export default function App() {
     },
   }));
 
-  const isSellOutResumo = section.id === 'sell-out' && tab === 'Resumo';
-
   return (
     <div className="bj-shell">
       <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(v => !v)} onClose={() => setSidebarOpen(false)} items={items} />
       <Content>
-        <Header eyebrow={`BLUE JACKET / ${section.label}`} title={tab || section.label} competence="Setembro 2026" />
+        <Header eyebrow={`BLUE JACKET / ${section.label}`} title={tab || section.label} competence={formatCompetencia(CURRENT_COMPETENCE)} />
         <TopTabs
           tabs={section.tabs.map(label => ({ id: label, label }))}
           activeId={tab}
           onSelect={setTab}
         />
         <PanelPage>
-          {isSellOutResumo ? <SellOutResumo /> : <PlaceholderPage section={section.label} tab={tab} />}
+          {renderPage(section.id, section.label, tab)}
         </PanelPage>
       </Content>
     </div>
