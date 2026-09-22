@@ -27,23 +27,24 @@
 
 .panel-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--bj-space-4); }
 
-/* KPI card — ported 1:1 from the "Painel PEX" reference: 20px/22px
- * padding, a 12px label row, a big mono value baseline-aligned with a
- * muted inline suffix, and a thin 5px progress bar with no text riding
- * on it (the suffix already carries the percentage). */
+/* KPI card — ported 1:1 from the "Painel PEX" reference's theme-progress
+ * cards: a 92px circular ring (percentage set inside it) sits beside the
+ * label/value/caption text, in a single row, 22px padding all round. */
 .panel-kpi {
   position: relative;
   background: var(--bj-card);
   border: var(--bj-border-width) solid var(--bj-border);
   border-radius: var(--bj-radius-card);
-  padding: 20px 22px;
+  padding: 22px;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 128px;
+  align-items: center;
+  gap: 18px;
 }
-.panel-kpi-top { display: flex; align-items: center; justify-content: space-between; gap: var(--bj-space-2); }
-.panel-kpi-label { font-size: 12px; font-weight: var(--bj-weight-semibold); color: var(--bj-muted); }
+.panel-kpi-ring { flex-shrink: 0; }
+.panel-kpi-ring-label { font-family: var(--bj-font-mono); font-size: 22px; font-weight: var(--bj-weight-semibold); fill: var(--bj-text-strong); }
+.panel-kpi-body { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.panel-kpi-top { display: flex; align-items: center; gap: var(--bj-space-2); flex-wrap: wrap; }
+.panel-kpi-label { font-size: 13.5px; font-weight: var(--bj-weight-bold); color: var(--bj-text-strong); }
 .panel-kpi-badge {
   font-size: 10px;
   font-weight: var(--bj-weight-bold);
@@ -54,21 +55,18 @@
   padding: 3px 8px;
   border-radius: var(--bj-radius-pill);
 }
-.panel-kpi-value-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.panel-kpi-value-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
 .panel-kpi-value {
   font-family: var(--bj-font-mono);
-  font-size: clamp(1.3rem, 2.1vw, 2.125rem);
+  font-size: clamp(0.95rem, 1.3vw, 1.15rem);
   font-weight: var(--bj-weight-semibold);
   letter-spacing: -0.01em;
-  color: var(--bj-text-strong);
+  color: var(--bj-text);
   overflow-wrap: anywhere;
 }
 .panel-kpi[data-tone="attention"] .panel-kpi-value { color: var(--bj-red); }
-.panel-kpi-suffix { font-size: 12.5px; color: var(--bj-muted-2); }
+.panel-kpi-suffix { font-size: 11.5px; color: var(--bj-muted-2); }
 .panel-kpi-caption { font-family: var(--bj-font-mono); font-size: 11px; color: var(--bj-muted-2); }
-.panel-kpi-progress { width: 100%; height: 5px; border-radius: 3px; background: var(--bj-border); overflow: hidden; }
-.panel-kpi-progress > span { display: block; height: 100%; border-radius: inherit; background: var(--bj-red); transition: width 0.2s ease; }
-.panel-kpi-progress.is-empty > span { display: none; }
 .panel-kpi[data-tone="attention"] { border-color: rgba(225, 20, 41, 0.35); }
 
 .panel-progress { height: 4px; border-radius: var(--bj-radius-pill); background: rgba(255, 255, 255, 0.05); overflow: hidden; }
