@@ -1,4 +1,4 @@
-import { MotorClientes } from '../clientes/MotorClientes';
+import { MotorClientes } from './MotorClientes';
 
 // Administração > Bases — cada motor de mesclagem/processamento de dados
 // (Motor 1, Motor 2, ...) vive aqui como uma seção própria, na ordem em que
