@@ -11,6 +11,7 @@ import { EstoqueLancamentos } from './pages/estoque/Lancamentos';
 import { ClientesLista } from './pages/clientes/Clientes';
 import { ClientesTopVarejistas } from './pages/clientes/TopVarejistas';
 import { AdminBases } from './pages/admin/Bases';
+import { AdminAuditoria } from './pages/admin/Auditoria';
 import { CURRENT_COMPETENCE, formatCompetencia } from './lib/competencia';
 
 const SECTIONS = [
@@ -53,6 +54,7 @@ function renderPage(sectionId: string, sectionLabel: string, tab: string) {
   if (sectionId === 'administracao' && tab === 'Bases') return <AdminBases />;
   if (sectionId === 'administracao' && tab === 'Cadastros') return <AdminCadastros />;
   if (sectionId === 'administracao' && tab === 'Metas') return <AdminMetas />;
+  if (sectionId === 'administracao' && tab === 'Auditoria') return <AdminAuditoria />;
   if (sectionId === 'estoque' && tab === 'Produtos') return <EstoqueProdutos />;
   if (sectionId === 'estoque' && tab === 'Lançamentos') return <EstoqueLancamentos />;
   if (sectionId === 'clientes' && tab === 'Clientes') return <ClientesLista />;
