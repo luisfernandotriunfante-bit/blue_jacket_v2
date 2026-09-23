@@ -5,8 +5,9 @@
 // motorMovimentacoesTypes.ts); as próximas fontes (entrada de notas,
 // vendas, corte) vão acumular por competência quando forem implementadas.
 
+import { resumirEntradaNotas } from '../lib/motorMovimentacoes';
 import { usePersistedState } from '../lib/storage';
-import type { CarteiraItem, MotorCarteiraResumo } from './motorMovimentacoesTypes';
+import type { CarteiraItem, EntradaNotaItem, MotorCarteiraResumo, MotorEntradaNotasResumo } from './motorMovimentacoesTypes';
 
 export function useCarteira() {
   const [itens, setItens] = usePersistedState<CarteiraItem[]>('bj:motorMovimentacoes:carteira', []);
@@ -15,6 +16,35 @@ export function useCarteira() {
   function salvarResultado(novosItens: CarteiraItem[], novoResumo: MotorCarteiraResumo) {
     setItens(novosItens);
     setResumo(novoResumo);
+  }
+
+  function limpar() {
+    setItens([]);
+    setResumo(null);
+  }
+
+  return { itens, resumo, salvarResultado, limpar };
+}
+
+// Entrada de notas ACUMULA (ao contrário da Carteira): cada upload faz
+// merge pela chave (notaFiscal + transEntrada) — as notas repetidas são
+// substituídas pela versão nova, e as inéditas são somadas ao histórico
+// já processado. O resumo é sempre recalculado sobre a lista mesclada
+// inteira, nunca só sobre o upload do momento.
+export function useEntradaNotas() {
+  const [itens, setItens] = usePersistedState<EntradaNotaItem[]>('bj:motorMovimentacoes:entradaNotas', []);
+  const [resumo, setResumo] = usePersistedState<MotorEntradaNotasResumo | null>('bj:motorMovimentacoes:entradaNotasResumo', null);
+
+  function chaveDe(it: EntradaNotaItem) {
+    return `${it.notaFiscal}|${it.transEntrada}`;
+  }
+
+  function salvarResultado(novosItens: EntradaNotaItem[]) {
+    const chavesNovas = new Set(novosItens.map(chaveDe));
+    const mantidos = itens.filter(it => !chavesNovas.has(chaveDe(it)));
+    const mesclados = [...mantidos, ...novosItens];
+    setItens(mesclados);
+    setResumo(resumirEntradaNotas(mesclados));
   }
 
   function limpar() {
