@@ -39,9 +39,34 @@ type VendaAgg = {
   pesoBru: number;
   n: number;
   clientes: Set<string>;
+  // Quebra por tipo de operação (Oper.CFOP, m[8])
+  qtdVenda: number;
+  valorVenda: number;
+  qtdDevolucao: number;
+  valorDevolucao: number;
+  qtdBonificacao: number;
+  valorBonificacao: number;
+  qtdNaoClassificada: number;
+  valorNaoClassificada: number;
 };
 
-async function parseVendas379(file: File, agg: Map<string, VendaAgg>) {
+// Classificação do código de operação (Oper.CFOP) do 379 antigo, validada
+// contra o 310 (compras por cliente) e confirmada com o usuário:
+//  - prefixo "51"  -> venda líquida
+//  - prefixo "13"  -> devolução (validado: soma 13xxx ≈ V.Devolucoes do 310, ~1%)
+//  - prefixo "599" -> bonificação (confirmado pelo usuário; 310 não permitiu
+//    validação empírica pois sua coluna Bonificacao veio zerada no ano todo)
+//  - qualquer outro prefixo -> não classificado (ex.: 21201, 19902, 63203).
+//    Nunca misturar com as três categorias acima: fica separado para
+//    conferência manual com financeiro/ERP.
+function classificarOperacao379(operCfop: string): 'venda' | 'devolucao' | 'bonificacao' | 'naoClassificado' {
+  if (operCfop.startsWith('51')) return 'venda';
+  if (operCfop.startsWith('13')) return 'devolucao';
+  if (operCfop.startsWith('599')) return 'bonificacao';
+  return 'naoClassificado';
+}
+
+async function parseVendas379(file: File, agg: Map<string, VendaAgg>, codigosNaoClassificados: Set<string>) {
   const text = await readTextFile(file);
   const lines = text.split(/\r?\n/);
   for (const raw of lines) {
@@ -55,21 +80,35 @@ async function parseVendas379(file: File, agg: Map<string, VendaAgg>) {
     if (!codigo) continue;
     const cliente = m[12];
     const ean = m[26] && /^\d{6,}$/.test(m[26]) ? m[26] : undefined; // "SEM GTIN" (produto sem código de barras) cai fora aqui
+    const operCfop = m[8];
+    const tipo = classificarOperacao379(operCfop);
+    if (tipo === 'naoClassificado') codigosNaoClassificados.add(operCfop);
 
     const key = `${data.competencia}|${codigo}`;
     let a = agg.get(key);
     if (!a) {
-      a = { ean, qtd: 0, valor: 0, desconto: 0, pesoLiq: 0, pesoBru: 0, n: 0, clientes: new Set() };
+      a = {
+        ean, qtd: 0, valor: 0, desconto: 0, pesoLiq: 0, pesoBru: 0, n: 0, clientes: new Set(),
+        qtdVenda: 0, valorVenda: 0, qtdDevolucao: 0, valorDevolucao: 0,
+        qtdBonificacao: 0, valorBonificacao: 0, qtdNaoClassificada: 0, valorNaoClassificada: 0,
+      };
       agg.set(key, a);
     }
-    a.qtd += numBR(m[5]);
-    a.valor += numBR(m[6]);
+    const qtd = numBR(m[5]);
+    const valor = numBR(m[6]);
+    a.qtd += qtd;
+    a.valor += valor;
     a.desconto += numBR(m[7]);
     a.pesoLiq += numBR(m[14]);
     a.pesoBru += numBR(m[15]);
     a.n += 1;
     a.clientes.add(cliente);
     if (!a.ean && ean) a.ean = ean;
+
+    if (tipo === 'venda') { a.qtdVenda += qtd; a.valorVenda += valor; }
+    else if (tipo === 'devolucao') { a.qtdDevolucao += qtd; a.valorDevolucao += valor; }
+    else if (tipo === 'bonificacao') { a.qtdBonificacao += qtd; a.valorBonificacao += valor; }
+    else { a.qtdNaoClassificada += qtd; a.valorNaoClassificada += valor; }
   }
 }
 
@@ -171,8 +210,9 @@ export async function processarMotorHistorico(input: MotorHistoricoInput): Promi
   resumo: MotorHistoricoResumo;
 }> {
   const vendaAgg = new Map<string, VendaAgg>();
+  const codigosOperNaoClassificados = new Set<string>();
   for (const file of input.vendas379) {
-    await parseVendas379(file, vendaAgg);
+    await parseVendas379(file, vendaAgg, codigosOperNaoClassificados);
   }
 
   const vendasMensais: VendaHistoricoMensal[] = [...vendaAgg.entries()].map(([key, a]) => {
@@ -188,6 +228,14 @@ export async function processarMotorHistorico(input: MotorHistoricoInput): Promi
       pesoBruKg: Math.round(a.pesoBru * 100) / 100,
       numLancamentos: a.n,
       numClientesDistintos: a.clientes.size,
+      qtdVendaLiquida: Math.round(a.qtdVenda * 100) / 100,
+      valorVendaLiquida: Math.round(a.valorVenda * 100) / 100,
+      qtdDevolvida: Math.round(a.qtdDevolucao * 100) / 100,
+      valorDevolvido: Math.round(a.valorDevolucao * 100) / 100,
+      qtdBonificada: Math.round(a.qtdBonificacao * 100) / 100,
+      valorBonificado: Math.round(a.valorBonificacao * 100) / 100,
+      qtdNaoClassificada: Math.round(a.qtdNaoClassificada * 100) / 100,
+      valorNaoClassificado: Math.round(a.valorNaoClassificada * 100) / 100,
     };
   });
 
@@ -224,7 +272,9 @@ export async function processarMotorHistorico(input: MotorHistoricoInput): Promi
     totalProdutosComCompraAnual: comprasAnuais.length,
     produtosSomenteEm310,
     processadoEm: new Date().toISOString(),
+    codigosOperNaoClassificados: [...codigosOperNaoClassificados].sort(),
   };
 
   return { vendasMensais, notasEntrada, comprasAnuais, resumo };
 }
+
