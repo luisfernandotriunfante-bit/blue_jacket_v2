@@ -101,3 +101,70 @@ export type MotorEntradaNotasResumo = {
   periodoEntradaFim?: string;
   processadoEm: string;
 };
+
+// -------------------------------------------------------------------- Vendas
+
+// Fonte: relatório 8022 do ERP — planilha de vendas já tabular (uma linha
+// por item de pedido/nota), com CNPJ, produto, vendedor/supervisor e o
+// campo tipoVenda (venda, devolução ou bonificação) e statusPedido
+// (faturado ou a faturar).
+//
+// DIFERENTE da Entrada de notas: aqui não existe uma chave linha-a-linha
+// confiável para merge — o relatório pode repetir legitimamente a mesma
+// combinação pedido+produto+nota (ex.: entregas fracionadas), então, como
+// a Carteira, cada upload SUBSTITUI a base anterior inteira. É sempre a
+// foto do período exportado no relatório, não um acumulado por
+// competência (revisar quando o fechamento de competência automático for
+// desenhado).
+export type VendaItem = {
+  filial?: string;
+  fornecedor?: number;
+  dataMovimento?: string; // ISO
+  codCliente: string;
+  nomeCliente?: string;
+  cnpjCpfCliente?: string;
+  segmentoCnae?: string;
+  cidade?: string;
+  cep?: string;
+  uf?: string;
+  numeroPedWinthor: string;
+  numeroPedRca?: string;
+  dataEmissaoNf?: string; // ISO
+  numeroNotaFiscal?: string;
+  origemPedido?: string;
+  statusPedido?: string; // 'FATURADO' | 'A FATURAR'
+  statusBloqueio?: string;
+  codVendedor?: string;
+  vendedor?: string;
+  codSupervisor?: string;
+  supervisor?: string;
+  codigoFabricante?: string; // casa com skuFabricante do Motor de Produtos
+  eanProduto?: string;
+  eanCadastro?: string;
+  codProdWinthor: string; // casa com codigoInterno do Motor de Produtos
+  descricaoProduto?: string;
+  caixasVendidas: number;
+  unidadesVendidas: number;
+  pesoBrutoKg: number;
+  pesoLiquidoKg: number;
+  situacaoPeso?: string;
+  valorMercadoria: number;
+  valorNota: number;
+  tipoVenda: 'VENDA' | 'DEVOLUCAO' | 'BONIFICACAO' | string;
+};
+
+export type MotorVendasResumo = {
+  totalItens: number;
+  vendasQtd: number;
+  vendasValor: number;
+  devolucoesQtd: number;
+  devolucoesValor: number;
+  bonificacoesQtd: number;
+  bonificacoesValor: number;
+  faturadoValor: number;
+  aFaturarValor: number;
+  unidadesVendidasTotal: number;
+  periodoInicio?: string;
+  periodoFim?: string;
+  processadoEm: string;
+};
