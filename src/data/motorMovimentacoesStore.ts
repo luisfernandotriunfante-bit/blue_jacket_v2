@@ -104,10 +104,18 @@ export function useCorte() {
     setResumo(resumirCorte(mesclados));
   }
 
+  // Usado pelo fechamento de competência: SUBSTITUI a lista inteira (ao
+  // contrário de salvarResultado, que mescla) — recebe só os itens que
+  // devem continuar no Motor 4 após a competência fechada ser retirada.
+  function definirItens(novosItens: CorteItem[]) {
+    setItens(novosItens);
+    setResumo(resumirCorte(novosItens));
+  }
+
   function limpar() {
     setItens([]);
     setResumo(null);
   }
 
-  return { itens, resumo, salvarResultado, limpar };
+  return { itens, resumo, salvarResultado, definirItens, limpar };
 }
