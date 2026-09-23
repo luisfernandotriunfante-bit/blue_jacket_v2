@@ -1,13 +1,23 @@
 // Motor de Produtos (Motor 2) — mescla, por código interno (Winthor) com
 // ponte por SKU do fabricante e por EAN, as fontes de dado de produto:
-// cadastro interno (286, 105, estoque-1118, extrato-1118, preço 8011,
-// logístico 8013) e cadastro/sortimento da indústria (Histórico Lista de
-// Preço, Sortimento Recomendado).
+// cadastro interno (286, estoque-1118, preço 8011) e cadastro/sortimento
+// da indústria (Histórico Lista de Preço, Sortimento Recomendado).
 //
-// Âncora: os itens que já têm código interno (286/105/estoque-1118) são a
+// Fontes removidas do motor (histórico das decisões):
+// - 105: tudo que trazia de novo (preço de venda unitário) não era
+//   indispensável e o resto já vinha do 286.
+// - 8013 (logístico): "estoque em caixas" agora é calculado (estoque
+//   disponível ÷ unidades por caixa, do Histórico Lista de Preço) em vez
+//   de vir de um arquivo à parte; o peso por caixa já vem do Histórico.
+// - extrato-1118 (movimento mensal): é dado de venda/movimentação, não de
+//   cadastro — deve entrar num futuro Motor de Vendas, não neste motor.
+//
+// Âncora: os itens que já têm código interno (286/estoque-1118) são a
 // base. Itens que só existem na indústria (SKU sem código interno nosso)
 // também entram na base, marcados como sem cadastro Winthor ainda — a
 // mesclagem nunca descarta linha por falta de dado em outra fonte.
+// Estoque: o 286 preenche um valor inicial, mas o estoque-1118 é a fonte
+// autoritativa — quando enviado, seus números sobrescrevem os do 286.
 
 import type {
   FaixaKey,
@@ -17,8 +27,6 @@ import type {
 } from '../data/produtoMotorTypes';
 import { nivelSortimentoLabel } from '../data/produtoMotorTypes';
 import { extractRecords, normalizeDoc, pickSheet, readWorkbook, sheetToMatrix } from './xlsxParse';
-
-type Rec = Record<string, unknown>;
 
 function str(v: unknown): string | undefined {
   if (v === null || v === undefined) return undefined;
@@ -69,10 +77,7 @@ function normalizeCanal(v: unknown): string {
 
 export type MotorProdutosInput = {
   produtos286?: File;
-  posicaoEstoque105?: File;
-  logistico8013?: File;
   estoque1118?: File;
-  extrato1118?: File;
   preco8011?: File;
   historicoListaPreco?: File;
   sortimentoRecomendado?: File;
@@ -174,53 +179,11 @@ async function processarProdutos286(file: File, b: MotorProdutosBuilder) {
   }
 }
 
-// ------------------------------------------------------------------- 105
-
-async function processarPosicaoEstoque105(file: File, b: MotorProdutosBuilder) {
-  const wb = await readWorkbook(file);
-  const sheet = pickSheet(wb, ['105', 'posicao']);
-  const matrix = sheetToMatrix(sheet);
-  const records = extractRecords(matrix, ['codigo']);
-
-  for (const rec of records) {
-    const codigo = codigoKey(rec.codigo);
-    if (!codigo) continue;
-    const sku = skuKey(rec.codfab);
-    const r = b.byCodigoComPontes(codigo, sku, undefined);
-    r.descricao = r.descricao ?? str(rec.descricao);
-    r.embalagem = r.embalagem ?? str(rec.embalagem);
-    r.classe = r.classe ?? str(rec.classe);
-    r.classificacaoFiscal = r.classificacaoFiscal ?? str(rec.ncm);
-    r.precoVendaUnit = r.precoVendaUnit ?? num(rec.pvendaunit);
-    r.custoReal = r.custoReal ?? num(rec.custorealunit);
-    if (r.estoqueTotal === undefined) r.estoqueTotal = num(rec.qtestoque);
-    b.addOrigem(r, 'interno_105');
-  }
-}
-
-// ----------------------------------------------------------------- 8013
-
-async function processarLogistico8013(file: File, b: MotorProdutosBuilder) {
-  const wb = await readWorkbook(file);
-  const sheet = pickSheet(wb, ['8013', 'logistico']);
-  const matrix = sheetToMatrix(sheet);
-  const records = extractRecords(matrix, ['codigodoprodutoean13', 'descricaodoproduto']);
-
-  for (const rec of records) {
-    const ean = eanKey(rec.codigodoprodutoean13);
-    if (!ean) continue;
-    const codigo = b.eanToCodigo.get(ean);
-    if (!codigo) continue; // não é item da nossa base (286) — fora de escopo
-    const r = b.byCodigoSomenteSeExistir(codigo);
-    if (!r) continue;
-    r.estoqueEmCaixasLogistico = r.estoqueEmCaixasLogistico ?? num(rec.estoqueemcx);
-    if (r.pesoBrutoCaixaKg === undefined) r.pesoBrutoCaixaKg = num(rec.pesocdakg);
-    b.addOrigem(r, 'interno_logistico_8013');
-  }
-}
-
 // ------------------------------------------------------------ estoque-1118
 
+// Fonte autoritativa de estoque: quando presente, os números daqui
+// substituem qualquer valor de estoque que o 286 já tenha preenchido (o
+// 286 continua servindo de fallback para quem não enviar este arquivo).
 async function processarEstoque1118(file: File, b: MotorProdutosBuilder) {
   const wb = await readWorkbook(file);
   const sheet = pickSheet(wb, ['1118', 'estoque']);
@@ -236,60 +199,12 @@ async function processarEstoque1118(file: File, b: MotorProdutosBuilder) {
     r.embalagem = r.embalagem ?? str(rec.embalagem);
     r.classe = r.classe ?? str(rec.classe);
     r.marca = r.marca ?? str(rec.marca);
-    r.estoqueDisponivel = r.estoqueDisponivel ?? num(rec.disponivel);
-    r.estoqueReservado = r.estoqueReservado ?? num(rec.reservado);
-    r.estoqueBloqueado = r.estoqueBloqueado ?? num(rec.bloqueado);
-    r.estoqueAvariado = r.estoqueAvariado ?? num(rec.avariado);
-    if (r.estoqueTotal === undefined) r.estoqueTotal = num(rec.estoque);
+    r.estoqueDisponivel = num(rec.disponivel) ?? r.estoqueDisponivel;
+    r.estoqueReservado = num(rec.reservado) ?? r.estoqueReservado;
+    r.estoqueBloqueado = num(rec.bloqueado) ?? r.estoqueBloqueado;
+    r.estoqueAvariado = num(rec.avariado) ?? r.estoqueAvariado;
+    r.estoqueTotal = num(rec.estoque) ?? r.estoqueTotal;
     b.addOrigem(r, 'interno_estoque_1118');
-  }
-}
-
-// ------------------------------------------------------------- extrato-1118
-
-// Relatório paginado: o cabeçalho se repete a cada ~53 linhas (uma página
-// por bloco). Em vez de depender de offsets de linha, cada linha é aceita
-// como dado só quando a coluna 0 (Código) é numérica e a coluna 1
-// (Produto) é texto — isso pula automaticamente cabeçalhos repetidos,
-// linhas em branco e o rodapé/título de cada página.
-function extractExtratoRecords(matrix: unknown[][]): Rec[] {
-  const records: Rec[] = [];
-  for (const row of matrix) {
-    const codigoRaw = row[0];
-    const produtoRaw = row[1];
-    if (codigoRaw === null || codigoRaw === undefined || codigoRaw === '') continue;
-    const codigoNum = Number(codigoRaw);
-    if (!Number.isFinite(codigoNum)) continue;
-    if (typeof produtoRaw !== 'string' || !produtoRaw.trim()) continue;
-    records.push({
-      codigo: String(Math.trunc(codigoNum)),
-      embalagem: row[7] ?? null,
-      estoqueinicial: row[9] ?? null,
-      entradas: row[10] ?? null,
-      saidas: row[12] ?? null,
-      saldofinal: row[23] ?? null,
-    });
-  }
-  return records;
-}
-
-async function processarExtrato1118(file: File, b: MotorProdutosBuilder, competencia: string) {
-  const wb = await readWorkbook(file);
-  const sheet = pickSheet(wb, ['1118', 'extrato', 'report']);
-  const matrix = sheetToMatrix(sheet);
-  const records = extractExtratoRecords(matrix);
-
-  for (const rec of records) {
-    const codigo = codigoKey(rec.codigo);
-    if (!codigo) continue;
-    const r = b.byCodigoSomenteSeExistir(codigo);
-    if (!r) continue;
-    r.competenciaMovimento = competencia;
-    r.estoqueInicialMes = num(rec.estoqueinicial) ?? 0;
-    r.entradasMes = num(rec.entradas) ?? 0;
-    r.saidasMes = num(rec.saidas) ?? 0;
-    r.saldoFinalMes = num(rec.saldofinal) ?? 0;
-    b.addOrigem(r, 'interno_extrato_1118');
   }
 }
 
@@ -382,17 +297,13 @@ async function processarSortimentoRecomendado(file: File, b: MotorProdutosBuilde
 
 export async function processarMotorProdutos(
   input: MotorProdutosInput,
-  competencia: string,
 ): Promise<{ produtos: ProdutoEnriquecido[]; resumo: MotorProdutosResumo }> {
   const b = new MotorProdutosBuilder();
 
   // Ordem importa: âncora interna primeiro (registra as pontes sku/ean →
   // código), fontes que só têm código depois, indústria por último.
   if (input.produtos286) await processarProdutos286(input.produtos286, b);
-  if (input.posicaoEstoque105) await processarPosicaoEstoque105(input.posicaoEstoque105, b);
   if (input.estoque1118) await processarEstoque1118(input.estoque1118, b);
-  if (input.logistico8013) await processarLogistico8013(input.logistico8013, b);
-  if (input.extrato1118) await processarExtrato1118(input.extrato1118, b, competencia);
   if (input.preco8011) await processarPreco8011(input.preco8011, b);
   if (input.historicoListaPreco) await processarHistoricoListaPreco(input.historicoListaPreco, b);
   if (input.sortimentoRecomendado) await processarSortimentoRecomendado(input.sortimentoRecomendado, b);
@@ -401,13 +312,21 @@ export async function processarMotorProdutos(
     .all()
     .sort((a, c) => (a.codigoInterno ? 0 : 1) - (c.codigoInterno ? 0 : 1) || (a.descricao ?? a.descricaoIndustria ?? '').localeCompare(c.descricao ?? c.descricaoIndustria ?? ''));
 
+  // Estoque em caixas: não vem mais de um arquivo (8013) — é calculado a
+  // partir do estoque disponível (interno) e das unidades por caixa (do
+  // Histórico Lista de Preço da indústria), quando ambos existem.
+  for (const p of produtos) {
+    if (p.estoqueDisponivel !== undefined && p.unidadesPorCaixa && p.unidadesPorCaixa > 0) {
+      p.estoqueEmCaixasLogistico = Math.round((p.estoqueDisponivel / p.unidadesPorCaixa) * 100) / 100;
+    }
+  }
+
   const resumo: MotorProdutosResumo = {
     totalItens: produtos.length,
     comCadastroInterno: produtos.filter(p => p.codigoInterno).length,
     somenteIndustria: produtos.filter(p => !p.codigoInterno).length,
     comListaPrecoIndustria: produtos.filter(p => p.origens.includes('industria_lista_preco')).length,
     comSortimento: produtos.filter(p => Object.keys(p.sortimento).length > 0).length,
-    comMovimentoMes: produtos.filter(p => p.origens.includes('interno_extrato_1118')).length,
     processadoEm: new Date().toISOString(),
   };
 
