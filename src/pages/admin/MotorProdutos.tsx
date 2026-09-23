@@ -2,7 +2,6 @@ import { useState, type ChangeEvent } from 'react';
 import { PanelAlert, PanelCard, PanelSectionHeader } from '../../components/Panel';
 import { useMotorProdutos } from '../../data/motorProdutosStore';
 import { processarMotorProdutos, type MotorProdutosInput } from '../../lib/motorProdutos';
-import { CURRENT_COMPETENCE, formatCompetencia } from '../../lib/competencia';
 
 type SlotKey = keyof MotorProdutosInput;
 
@@ -13,24 +12,9 @@ const SLOTS: { key: SlotKey; titulo: string; descricao: string }[] = [
     descricao: 'Cadastro interno principal: código, descrição, classe, marca, estoque e custo.',
   },
   {
-    key: 'posicaoEstoque105',
-    titulo: 'Relatório 105 (posição de estoque)',
-    descricao: 'Reforço de cadastro e preço de venda por código interno.',
-  },
-  {
     key: 'estoque1118',
     titulo: 'Estoque 1118',
-    descricao: 'Quantidade de itens: disponível, reservado, bloqueado, avariado.',
-  },
-  {
-    key: 'logistico8013',
-    titulo: 'Logístico 8013',
-    descricao: 'Dados logísticos por EAN: estoque em caixas, peso bruto por caixa.',
-  },
-  {
-    key: 'extrato1118',
-    titulo: 'Extrato 1118 (movimento do mês)',
-    descricao: `Relatório paginado de movimentação: estoque inicial, entradas, saídas e saldo final da competência de ${formatCompetencia(CURRENT_COMPETENCE)}.`,
+    descricao: 'Fonte autoritativa de estoque: disponível, reservado, bloqueado, avariado (sobrescreve o valor inicial do 286).',
   },
   {
     key: 'preco8011',
@@ -56,6 +40,12 @@ const SLOTS: { key: SlotKey; titulo: string; descricao: string }[] = [
 // marcados como "sem código interno" — a mesclagem nunca descarta linha por
 // falta de dado em outra fonte.
 //
+// Fontes removidas do escopo deste motor: 105 (só duplicava o 286),
+// logístico-8013 (estoque em caixas agora é calculado a partir do estoque
+// disponível ÷ unidades por caixa, em vez de vir de arquivo) e extrato-1118
+// (movimento mensal — é dado de venda, reservado para um futuro Motor de
+// Vendas, não para este motor de cadastro).
+//
 // Esta página só cuida do processamento em si (upload + mesclagem). O
 // resultado é guardado em bj:motorProdutos:* (ver motorProdutosStore).
 export function MotorProdutos() {
@@ -76,7 +66,7 @@ export function MotorProdutos() {
     setProcessing(true);
     setError(null);
     try {
-      const resultado = await processarMotorProdutos(files, CURRENT_COMPETENCE);
+      const resultado = await processarMotorProdutos(files);
       salvarResultado(resultado.produtos, resultado.resumo);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível processar os arquivos enviados.');
