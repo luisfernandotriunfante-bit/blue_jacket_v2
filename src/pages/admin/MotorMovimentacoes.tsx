@@ -6,6 +6,7 @@ import { useCompetenciaMotor4 } from '../../data/competenciaMotor4Store';
 import { useMotorHistorico } from '../../data/motorHistoricoStore';
 import { agregarFechamentoCorte, agregarFechamentoVendas } from '../../lib/fechamentoCompetencia';
 import { formatCompetencia } from '../../lib/competencia';
+import { downloadCsv } from '../../lib/exportCsv';
 
 // Administração > Bases > Motor 4 (Motor de Movimentações) — cobre toda
 // movimentação pós-virada do ERP: carteira de pedidos, entrada de notas,
@@ -128,7 +129,7 @@ function CarteiraSecao() {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { resumo, salvarResultado, limpar } = useCarteira();
+  const { itens, resumo, salvarResultado, limpar } = useCarteira();
 
   function handleFile(e: ChangeEvent<HTMLInputElement>) {
     setFile(e.target.files?.[0] ?? null);
@@ -165,6 +166,15 @@ function CarteiraSecao() {
         <button type="button" className="panel-button panel-button-primary" disabled={processing || !file} onClick={handleProcessar}>
           {processing ? 'Processando…' : 'Processar carteira'}
         </button>
+        {itens.length > 0 ? (
+          <button
+            type="button"
+            className="panel-button"
+            onClick={() => downloadCsv(`motor-movimentacoes-carteira-${new Date().toISOString().slice(0, 10)}.csv`, itens)}
+          >
+            Baixar planilha (CSV)
+          </button>
+        ) : null}
         {resumo ? (
           <button type="button" className="panel-button" onClick={limpar}>
             Limpar carteira
@@ -200,7 +210,7 @@ function EntradaNotasSecao() {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { resumo, salvarResultado, limpar } = useEntradaNotas();
+  const { itens, resumo, salvarResultado, limpar } = useEntradaNotas();
 
   function handleFile(e: ChangeEvent<HTMLInputElement>) {
     setFile(e.target.files?.[0] ?? null);
@@ -237,6 +247,15 @@ function EntradaNotasSecao() {
         <button type="button" className="panel-button panel-button-primary" disabled={processing || !file} onClick={handleProcessar}>
           {processing ? 'Processando…' : 'Processar entrada de notas'}
         </button>
+        {itens.length > 0 ? (
+          <button
+            type="button"
+            className="panel-button"
+            onClick={() => downloadCsv(`motor-movimentacoes-entrada-notas-${new Date().toISOString().slice(0, 10)}.csv`, itens)}
+          >
+            Baixar planilha (CSV)
+          </button>
+        ) : null}
         {resumo ? (
           <button type="button" className="panel-button" onClick={limpar}>
             Limpar entrada de notas
@@ -276,7 +295,7 @@ function VendasSecao() {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { resumo, salvarResultado, limpar } = useVendas();
+  const { itens, resumo, salvarResultado, limpar } = useVendas();
 
   function handleFile(e: ChangeEvent<HTMLInputElement>) {
     setFile(e.target.files?.[0] ?? null);
@@ -313,6 +332,15 @@ function VendasSecao() {
         <button type="button" className="panel-button panel-button-primary" disabled={processing || !file} onClick={handleProcessar}>
           {processing ? 'Processando…' : 'Processar vendas'}
         </button>
+        {itens.length > 0 ? (
+          <button
+            type="button"
+            className="panel-button"
+            onClick={() => downloadCsv(`motor-movimentacoes-vendas-${new Date().toISOString().slice(0, 10)}.csv`, itens)}
+          >
+            Baixar planilha (CSV)
+          </button>
+        ) : null}
         {resumo ? (
           <button type="button" className="panel-button" onClick={limpar}>
             Limpar vendas
@@ -357,7 +385,7 @@ function CorteSecao() {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { resumo, salvarResultado, limpar } = useCorte();
+  const { itens, resumo, salvarResultado, limpar } = useCorte();
 
   function handleFile(e: ChangeEvent<HTMLInputElement>) {
     setFile(e.target.files?.[0] ?? null);
@@ -394,6 +422,15 @@ function CorteSecao() {
         <button type="button" className="panel-button panel-button-primary" disabled={processing || !file} onClick={handleProcessar}>
           {processing ? 'Processando…' : 'Processar corte'}
         </button>
+        {itens.length > 0 ? (
+          <button
+            type="button"
+            className="panel-button"
+            onClick={() => downloadCsv(`motor-movimentacoes-corte-${new Date().toISOString().slice(0, 10)}.csv`, itens)}
+          >
+            Baixar planilha (CSV)
+          </button>
+        ) : null}
         {resumo ? (
           <button type="button" className="panel-button" onClick={limpar}>
             Limpar corte
