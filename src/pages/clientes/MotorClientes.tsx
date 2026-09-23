@@ -79,7 +79,7 @@ export function MotorClientes() {
     <>
       <PanelCard>
         <PanelSectionHeader
-          eyebrow="CLIENTES E SORTIMENTO — MOTOR DE CLIENTES"
+          eyebrow="ADMINISTRAÇÃO — BASES — MOTOR 1"
           title="Motor de Clientes"
           description="Envie as três fontes abaixo (o que tiver disponível) e o motor mescla por CNPJ normalizado, deduplica e monta uma base única com o máximo de informação por cliente. Roda inteiramente no navegador — nenhum arquivo sai daqui."
         />
