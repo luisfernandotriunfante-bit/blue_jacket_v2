@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from 'react';
 import { PanelAlert, PanelCard, PanelSectionHeader } from '../../components/Panel';
-import { useCarteira } from '../../data/motorMovimentacoesStore';
-import { processarCarteira } from '../../lib/motorMovimentacoes';
+import { useCarteira, useEntradaNotas } from '../../data/motorMovimentacoesStore';
+import { processarCarteira, processarEntradaNotas } from '../../lib/motorMovimentacoes';
 
 // Administração > Bases > Motor 4 (Motor de Movimentações) — cobre toda
 // movimentação pós-virada do ERP: carteira de pedidos, entrada de notas,
@@ -11,7 +11,7 @@ import { processarCarteira } from '../../lib/motorMovimentacoes';
 // Diferente do Motor Histórico (roda uma única vez), este é RECORRENTE —
 // reprocessado a cada fechamento de competência. Construído em etapas, na
 // ordem combinada com o usuário: Carteira → Entrada de notas (218) →
-// Vendas (8022) → Corte (1454). As três últimas ainda não existem aqui.
+// Vendas (8022) → Corte (1454). As duas últimas ainda não existem aqui.
 export function MotorMovimentacoes() {
   return (
     <PanelCard>
@@ -21,6 +21,7 @@ export function MotorMovimentacoes() {
         description="Movimentações atuais (pós-virada do ERP): carteira, entrada de notas, vendas/devoluções/bonificações e cortes. Recorrente — reprocesse a cada fechamento de competência. Roda inteiramente no navegador — nenhum arquivo sai daqui."
       />
       <CarteiraSecao />
+      <EntradaNotasSecao />
     </PanelCard>
   );
 }
@@ -89,6 +90,83 @@ function CarteiraSecao() {
           </PanelAlert>
         ) : (
           <PanelAlert tone="info">Nenhuma carteira processada ainda. Envie o arquivo e clique em "Processar carteira".</PanelAlert>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Entrada de notas: notas da carteira que já chegaram na unidade. Diferente
+// da Carteira, ACUMULA — cada upload faz merge pela chave (nota + nº
+// transação de entrada), então reenviar o relatório é seguro (não duplica)
+// e cada novo envio soma as notas inéditas ao histórico.
+function EntradaNotasSecao() {
+  const [file, setFile] = useState<File | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { resumo, salvarResultado, limpar } = useEntradaNotas();
+
+  function handleFile(e: ChangeEvent<HTMLInputElement>) {
+    setFile(e.target.files?.[0] ?? null);
+  }
+
+  async function handleProcessar() {
+    if (!file) return;
+    setProcessing(true);
+    setError(null);
+    try {
+      const resultado = await processarEntradaNotas(file);
+      salvarResultado(resultado.itens);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível processar o arquivo enviado.');
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 'var(--bj-space-6)' }}>
+      <div className="panel-upload-slot" style={{ maxWidth: 420 }}>
+        <div className="panel-upload-slot-title">Entrada de notas (relatório 218)</div>
+        <div className="panel-upload-slot-desc">
+          Notas da carteira que já chegaram na unidade — o que entrou, quando e o contas a pagar de cada uma. Acumula: reenviar o relatório não
+          duplica, só atualiza as notas repetidas e soma as novas.
+        </div>
+        <label className="panel-button panel-upload-button">
+          {file?.name ?? 'Selecionar arquivo (.xls/.xlsx)'}
+          <input type="file" accept=".xls,.xlsx,.csv" onChange={handleFile} style={{ display: 'none' }} />
+        </label>
+      </div>
+      <div className="panel-row-actions" style={{ justifyContent: 'flex-start', marginTop: 'var(--bj-space-2)' }}>
+        <button type="button" className="panel-button panel-button-primary" disabled={processing || !file} onClick={handleProcessar}>
+          {processing ? 'Processando…' : 'Processar entrada de notas'}
+        </button>
+        {resumo ? (
+          <button type="button" className="panel-button" onClick={limpar}>
+            Limpar entrada de notas
+          </button>
+        ) : null}
+      </div>
+      {error ? (
+        <div style={{ marginTop: 'var(--bj-space-4)' }}>
+          <PanelAlert tone="error">{error}</PanelAlert>
+        </div>
+      ) : null}
+      <div style={{ marginTop: 'var(--bj-space-4)' }}>
+        {resumo ? (
+          <PanelAlert tone="success">
+            Histórico atualizado em {new Date(resumo.processadoEm).toLocaleString('pt-BR')} — {resumo.totalNotas.toLocaleString('pt-BR')} nota(s),{' '}
+            {resumo.totalItens.toLocaleString('pt-BR')} item(ns) de produto,{' '}
+            {resumo.valorTotalNotas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} no total
+            {resumo.periodoEntradaInicio && resumo.periodoEntradaFim
+              ? ` — entradas de ${new Date(resumo.periodoEntradaInicio + 'T00:00:00').toLocaleDateString('pt-BR')} a ${new Date(
+                  resumo.periodoEntradaFim + 'T00:00:00',
+                ).toLocaleDateString('pt-BR')}`
+              : ''}
+            .
+          </PanelAlert>
+        ) : (
+          <PanelAlert tone="info">Nenhuma entrada de notas processada ainda. Envie o relatório 218 e clique em "Processar entrada de notas".</PanelAlert>
         )}
       </div>
     </div>
