@@ -42,3 +42,62 @@ export type MotorCarteiraResumo = {
   valorPendenteTotal: number;
   processadoEm: string;
 };
+
+// --------------------------------------------------------- Entrada de notas
+
+// Fonte: relatório 218 do ERP ("Rel. Entrada de Mercadoria — Analítico —
+// Por nota fiscal"). É um relatório impresso e agrupado: cada nota fiscal
+// forma um bloco (cabeçalho + 1 linha com os dados da nota), seguido de um
+// sub-bloco de produtos (1 ou mais linhas) e um sub-bloco de contas a
+// pagar (1 linha). Cada linha aqui representa UM PRODUTO de UMA nota — os
+// dados da nota e do contas a pagar ficam repetidos em cada produto do
+// mesmo bloco, para facilitar filtro/soma direto na lista.
+//
+// DIFERENTE da Carteira: esta fonte ACUMULA — cada upload faz merge pela
+// chave (notaFiscal + transEntrada): as notas repetidas são substituídas
+// (o upload mais novo vence) e as novas são somadas ao histórico já
+// processado, sem apagar o que já existia.
+export type EntradaNotaItem = {
+  // nota fiscal (repetido em cada produto do mesmo bloco)
+  dtEntrada?: string; // ISO — data em que a mercadoria chegou na unidade
+  transEntrada: number; // Nº Trans. Ent. — chave junto com notaFiscal
+  notaFiscal: string; // sem o "*" inicial
+  tipoEntrada?: string;
+  serie?: string;
+  dtEmissao?: string; // ISO — data de emissão da nota pelo fornecedor
+  prazoEntrega?: number;
+  filial?: string;
+  codFornecedor?: number;
+  fornecedor?: string;
+  cgc?: string;
+  uf?: string;
+  valorTotalNota: number;
+  valorIpi: number;
+  // produto (uma linha por produto da nota)
+  codigoInterno: string; // casa com codigoInterno do Motor de Produtos
+  produto?: string;
+  filialProduto?: string;
+  embalagem?: string;
+  un?: string;
+  qtd: number;
+  precoUnit: number;
+  custoFinAnterior?: number;
+  custoFinAtual?: number;
+  codigoFiscal?: string;
+  codigoOperacao?: string;
+  // contas a pagar da nota (repetido em cada produto do mesmo bloco)
+  cPagarNrLanc?: number;
+  cPagarValor?: number;
+  cPagarDtVenc?: string; // ISO
+  cPagarPrazo?: number;
+  cPagarIndice?: string;
+};
+
+export type MotorEntradaNotasResumo = {
+  totalNotas: number;
+  totalItens: number;
+  valorTotalNotas: number;
+  periodoEntradaInicio?: string;
+  periodoEntradaFim?: string;
+  processadoEm: string;
+};
