@@ -10,15 +10,15 @@ export function useMotorClientes() {
   const [clientes, setClientes] = usePersistedState<ClienteEnriquecido[]>('bj:motorClientes:base', []);
   const [resumo, setResumo] = usePersistedState<MotorClientesResumo | null>('bj:motorClientes:resumo', null);
 
-function salvarResultado(novosClientes: ClienteEnriquecido[], novoResumo: MotorClientesResumo) {
-  setClientes(novosClientes);
-  setResumo(novoResumo);
-}
+  function salvarResultado(novosClientes: ClienteEnriquecido[], novoResumo: MotorClientesResumo) {
+    setClientes(novosClientes);
+    setResumo(novoResumo);
+  }
 
-function limpar() {
-  setClientes([]);
-  setResumo(null);
-}
+  function limpar() {
+    setClientes([]);
+    setResumo(null);
+  }
 
-return { clientes, resumo, salvarResultado, limpar };
+  return { clientes, resumo, salvarResultado, limpar };
 }
