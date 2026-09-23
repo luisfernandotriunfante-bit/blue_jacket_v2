@@ -50,19 +50,25 @@ type VendaAgg = {
   valorNaoClassificada: number;
 };
 
-// Classificação do código de operação (Oper.CFOP) do 379 antigo, validada
-// contra o 310 (compras por cliente) e confirmada com o usuário:
-//  - prefixo "51"  -> venda líquida
-//  - prefixo "13"  -> devolução (validado: soma 13xxx ≈ V.Devolucoes do 310, ~1%)
-//  - prefixo "599" -> bonificação (confirmado pelo usuário; 310 não permitiu
-//    validação empírica pois sua coluna Bonificacao veio zerada no ano todo)
-//  - qualquer outro prefixo -> não classificado (ex.: 21201, 19902, 63203).
-//    Nunca misturar com as três categorias acima: fica separado para
-//    conferência manual com financeiro/ERP.
+// Classificação do código de operação (Oper.CFOP) do 379 antigo. Confirmada
+// pelo usuário por código exato (não por prefixo — ex.: 13202 aparece no 379
+// mas NÃO valida como devolução contra o relatório 310, então não pode
+// entrar no mesmo balde que 13201/13216/13234):
+//  - 51201, 51234, 51216 -> venda líquida
+//  - 13201, 13216, 13234 -> devolução (validado contra o 310)
+//  - 59901 -> bonificação (classificação de menor confiança para o usuário;
+//    não é crítica de mostrar — ver nota abaixo)
+//  - qualquer outro código -> não classificado (ex.: 13202, 21201, 19902,
+//    63203). Nunca misturar com as três categorias acima: fica separado
+//    para conferência manual com financeiro/ERP.
+const CODIGOS_VENDA_379 = new Set(['51201', '51234', '51216']);
+const CODIGOS_DEVOLUCAO_379 = new Set(['13201', '13216', '13234']);
+const CODIGOS_BONIFICACAO_379 = new Set(['59901']);
+
 function classificarOperacao379(operCfop: string): 'venda' | 'devolucao' | 'bonificacao' | 'naoClassificado' {
-  if (operCfop.startsWith('51')) return 'venda';
-  if (operCfop.startsWith('13')) return 'devolucao';
-  if (operCfop.startsWith('599')) return 'bonificacao';
+  if (CODIGOS_VENDA_379.has(operCfop)) return 'venda';
+  if (CODIGOS_DEVOLUCAO_379.has(operCfop)) return 'devolucao';
+  if (CODIGOS_BONIFICACAO_379.has(operCfop)) return 'bonificacao';
   return 'naoClassificado';
 }
 
@@ -277,4 +283,3 @@ export async function processarMotorHistorico(input: MotorHistoricoInput): Promi
 
   return { vendasMensais, notasEntrada, comprasAnuais, resumo };
 }
-
