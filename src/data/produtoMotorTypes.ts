@@ -44,11 +44,8 @@ export function nivelSortimentoLabel(nivel: number): string {
 
 export type ProdutoOrigem =
   | 'interno_286'
-  | 'interno_105'
   | 'interno_estoque_1118'
-  | 'interno_extrato_1118'
   | 'interno_preco_8011'
-  | 'interno_logistico_8013'
   | 'industria_lista_preco'
   | 'industria_sortimento';
 
@@ -89,19 +86,12 @@ export type ProdutoEnriquecido = {
   estoqueBloqueado?: number;
   estoqueAvariado?: number;
   estoqueTotal?: number;
+  // calculado (estoqueDisponivel ÷ unidadesPorCaixa), não vem de arquivo
   estoqueEmCaixasLogistico?: number;
   giroDia?: number;
 
-  // movimentação do mês corrente (extrato-1118, ligado à competência)
-  competenciaMovimento?: string;
-  estoqueInicialMes?: number;
-  entradasMes?: number;
-  saidasMes?: number;
-  saldoFinalMes?: number;
-
   // preço
   custoReal?: number;
-  precoVendaUnit?: number;
   precoTabelaSemST?: number;
   precoTabelaComST?: number;
   precoBaseIndustria?: number;
@@ -119,6 +109,5 @@ export type MotorProdutosResumo = {
   somenteIndustria: number;
   comListaPrecoIndustria: number;
   comSortimento: number;
-  comMovimentoMes: number;
   processadoEm: string;
 };
