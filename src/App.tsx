@@ -10,6 +10,7 @@ import { EstoqueProdutos } from './pages/estoque/Produtos';
 import { EstoqueLancamentos } from './pages/estoque/Lancamentos';
 import { ClientesLista } from './pages/clientes/Clientes';
 import { ClientesTopVarejistas } from './pages/clientes/TopVarejistas';
+import { MotorClientes } from './pages/clientes/MotorClientes';
 import { CURRENT_COMPETENCE, formatCompetencia } from './lib/competencia';
 
 const SECTIONS = [
@@ -17,7 +18,7 @@ const SECTIONS = [
   { id: 'pex', label: 'PEX', icon: <IconBars />, tabs: ['Indicadores'] },
   { id: 'estoque', label: 'Estoque', icon: <IconBox />, tabs: ['Visão Geral', 'Produtos', 'Lançamentos', 'Entradas e Saídas'] },
   { id: 'atividades', label: 'Atividades', icon: <IconGrid />, tabs: ['Visão Geral'] },
-  { id: 'clientes', label: 'Clientes e Sortimento', icon: <IconUsers />, tabs: ['Visão Geral', 'Clientes', 'Top Varejistas'] },
+  { id: 'clientes', label: 'Clientes e Sortimento', icon: <IconUsers />, tabs: ['Visão Geral', 'Clientes', 'Motor de Clientes', 'Top Varejistas'] },
   { id: 'documentos', label: 'Documentos', icon: <IconDoc />, tabs: [] as string[] },
   { id: 'administracao', label: 'Administração', icon: <IconGear />, tabs: ['Bases', 'Cadastros', 'Metas', 'Competências', 'Auditoria'] },
 ] as const;
@@ -54,6 +55,7 @@ function renderPage(sectionId: string, sectionLabel: string, tab: string) {
   if (sectionId === 'estoque' && tab === 'Produtos') return <EstoqueProdutos />;
   if (sectionId === 'estoque' && tab === 'Lançamentos') return <EstoqueLancamentos />;
   if (sectionId === 'clientes' && tab === 'Clientes') return <ClientesLista />;
+  if (sectionId === 'clientes' && tab === 'Motor de Clientes') return <MotorClientes />;
   if (sectionId === 'clientes' && tab === 'Top Varejistas') return <ClientesTopVarejistas />;
   return <PlaceholderPage section={sectionLabel} tab={tab} />;
 }
