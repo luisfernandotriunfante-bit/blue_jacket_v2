@@ -5,13 +5,14 @@
 // cada fonte (a carteira substitui; as demais acumulam por competência).
 //
 // Ordem de construção (definida com o usuário): Carteira → Entrada de
-// notas (218) → Vendas (8022) → Corte (1454). A última ainda não foi
-// implementada nesta primeira etapa.
+// notas (218) → Vendas (8022) → Corte (1454).
 
 import type {
   CarteiraItem,
+  CorteItem,
   EntradaNotaItem,
   MotorCarteiraResumo,
+  MotorCorteResumo,
   MotorEntradaNotasResumo,
   MotorVendasResumo,
   VendaItem,
@@ -359,6 +360,95 @@ export function resumirVendas(itens: VendaItem[]): MotorVendasResumo {
     faturadoValor: Math.round(faturadoValor * 100) / 100,
     aFaturarValor: Math.round(aFaturarValor * 100) / 100,
     unidadesVendidasTotal: Math.round(unidadesVendidasTotal * 100) / 100,
+    periodoInicio: datas[0],
+    periodoFim: datas[datas.length - 1],
+    processadoEm: new Date().toISOString(),
+  };
+}
+
+// -------------------------------------------------------------------- Corte
+
+// Relatório 1454: bloco por cliente (linha "CLIENTE:" + cabeçalho
+// decorativo repetido + N linhas de item + subtotal "Total Cliente:").
+// Não tem cabeçalho tabular único — lido por posição fixa de coluna nas
+// linhas de DADOS, igual à Entrada de notas. O marcador "CLIENTE:" pode
+// vir na coluna 0 ou na coluna 1 (o primeiro bloco de cada página do
+// relatório impresso vem deslocado por causa do preâmbulo de filtros que
+// se repete a cada quebra de página).
+export async function processarCorte(file: File): Promise<{ itens: CorteItem[] }> {
+  const wb = await readWorkbook(file);
+  const sheet = pickSheet(wb, ['corte', 'sheet1']);
+  const matrix = sheetToMatrix(sheet) as unknown[][];
+
+  const itens: CorteItem[] = [];
+  let clienteCodigo = '';
+  let clienteNome: string | undefined;
+
+  for (const row of matrix) {
+    const c0 = cellStr(row, 0);
+    const c1 = cellStr(row, 1);
+    if (c0 === 'CLIENTE:' || c1 === 'CLIENTE:') {
+      clienteCodigo = cellStr(row, 2);
+      clienteNome = str(cell(row, 4));
+      continue;
+    }
+    if (c0 === 'Data') continue; // cabeçalho decorativo repetido a cada bloco/página
+    if (cellStr(row, 5) === 'Total Cliente:') continue; // subtotal — recalculado no resumo
+    if (cellStr(row, 7) === 'Total Geral:') continue; // rodapé do relatório
+
+    const dataRaw = cell(row, 0);
+    const pedido = cellStr(row, 1);
+    const codigoProduto = cellStr(row, 2);
+    if (typeof dataRaw !== 'number' || !pedido || !codigoProduto) continue; // ruído do preâmbulo de página
+
+    itens.push({
+      clienteCodigo,
+      clienteNome,
+      dataMovimento: excelDateToISO(dataRaw),
+      numeroPedido: pedido,
+      codigoProduto,
+      descricaoProduto: str(cell(row, 3)),
+      embalagem: str(cell(row, 8)),
+      unidade: str(cell(row, 9)),
+      qtCorte: num(cell(row, 10)),
+      precoUnitario: num(cell(row, 11)),
+      valorTotal: num(cell(row, 12)),
+      codigoComprador: str(cell(row, 14)),
+      departamento: str(cell(row, 15)),
+    });
+  }
+
+  return { itens };
+}
+
+// Recalcula o resumo a partir da lista JÁ MESCLADA (histórico acumulado +
+// upload novo) — mesmo padrão de resumirEntradaNotas. Dedup por chave é só
+// uma rede de segurança: o merge do useCorte já garante lista sem chaves
+// repetidas.
+export function resumirCorte(itens: CorteItem[]): MotorCorteResumo {
+  const chaveDe = (it: CorteItem) => `${it.numeroPedido}|${it.codigoProduto}`;
+  const vistos = new Set<string>();
+  const clientes = new Set<string>();
+  let qtCorteTotal = 0;
+  let valorTotal = 0;
+  for (const it of itens) {
+    clientes.add(it.clienteCodigo);
+    const chave = chaveDe(it);
+    if (vistos.has(chave)) continue;
+    vistos.add(chave);
+    qtCorteTotal += it.qtCorte;
+    valorTotal += it.valorTotal;
+  }
+  const datas = itens
+    .map(it => it.dataMovimento)
+    .filter((d): d is string => !!d)
+    .sort();
+
+  return {
+    totalItens: vistos.size,
+    totalClientes: clientes.size,
+    qtCorteTotal: Math.round(qtCorteTotal * 100) / 100,
+    valorTotal: Math.round(valorTotal * 100) / 100,
     periodoInicio: datas[0],
     periodoFim: datas[datas.length - 1],
     processadoEm: new Date().toISOString(),
