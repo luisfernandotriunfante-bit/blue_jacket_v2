@@ -1,16 +1,25 @@
 import { PanelAlert, PanelCard, PanelSectionHeader } from '../../components/Panel';
 import { useLancamentoMarks } from '../../data/cadastros';
-import { PRODUTOS_BASE } from '../../data/mockBase';
+import { useMotorProdutos } from '../../data/motorProdutosStore';
 import { CURRENT_COMPETENCE, formatCompetencia } from '../../lib/competencia';
 
 // Estoque > Lançamentos — visão só-leitura (com opção de remover a
-// marcação) do que foi marcado como lançamento na aba Produtos.
+// marcação) do que foi marcado como lançamento na aba Produtos. A chave de
+// lançamento é código interno (ou SKU/EAN para itens só-indústria) — a
+// mesma usada em Estoque > Produtos.
+function produtoKey(p: { codigoInterno?: string; skuFabricante?: string; ean?: string }, index: number): string {
+  return p.codigoInterno ?? p.skuFabricante ?? p.ean ?? `sem-chave-${index}`;
+}
+
 export function EstoqueLancamentos() {
   const { marks, removeLancamento } = useLancamentoMarks();
+  const { produtos } = useMotorProdutos();
+
+  const produtosPorChave = new Map(produtos.map((p, index) => [produtoKey(p, index), p]));
 
   const rows = marks
     .filter(mark => mark.competencia === CURRENT_COMPETENCE)
-    .map(mark => ({ mark, produto: PRODUTOS_BASE.find(p => p.id === mark.produtoId) }))
+    .map(mark => ({ mark, produto: produtosPorChave.get(mark.produtoId) }))
     .filter((row): row is { mark: (typeof marks)[number]; produto: NonNullable<(typeof row)['produto']> } =>
       Boolean(row.produto),
     );
@@ -31,17 +40,17 @@ export function EstoqueLancamentos() {
               <tr>
                 <th>Código</th>
                 <th>Descrição</th>
-                <th>Linha</th>
+                <th>Embalagem</th>
                 <th>Tipo</th>
                 <th className="is-right">Ações</th>
               </tr>
             </thead>
             <tbody>
               {rows.map(({ mark, produto }) => (
-                <tr key={produto.id}>
-                  <td className="is-strong">{produto.codigo}</td>
-                  <td>{produto.descricao}</td>
-                  <td>{produto.linha}</td>
+                <tr key={mark.produtoId}>
+                  <td className="is-strong">{produto.codigoInterno ?? <span className="panel-muted">sem código</span>}</td>
+                  <td>{produto.descricao ?? produto.descricaoIndustria ?? '—'}</td>
+                  <td>{produto.embalagem ?? '—'}</td>
                   <td>
                     {mark.tipo === 'pex' ? (
                       <span className="panel-status-pill panel-status-critical">PEX</span>
@@ -53,7 +62,7 @@ export function EstoqueLancamentos() {
                     <button
                       type="button"
                       className="panel-chip"
-                      onClick={() => removeLancamento(produto.id, CURRENT_COMPETENCE)}
+                      onClick={() => removeLancamento(mark.produtoId, CURRENT_COMPETENCE)}
                     >
                       Remover
                     </button>
