@@ -5,12 +5,14 @@
 // motorMovimentacoesTypes.ts); as próximas fontes (entrada de notas,
 // vendas, corte) vão acumular por competência quando forem implementadas.
 
-import { resumirEntradaNotas } from '../lib/motorMovimentacoes';
+import { resumirCorte, resumirEntradaNotas } from '../lib/motorMovimentacoes';
 import { usePersistedState } from '../lib/storage';
 import type {
   CarteiraItem,
+  CorteItem,
   EntradaNotaItem,
   MotorCarteiraResumo,
+  MotorCorteResumo,
   MotorEntradaNotasResumo,
   MotorVendasResumo,
   VendaItem,
@@ -63,7 +65,7 @@ export function useEntradaNotas() {
 }
 
 // Vendas SUBSTITUI a cada upload (como a Carteira) — não há chave
-// linha-a-linha confjC�vel para merge nesta fonte (ver comentário de
+// linha-a-linha confiável para merge nesta fonte (ver comentário de
 // VendaItem em motorMovimentacoesTypes.ts).
 export function useVendas() {
   const [itens, setItens] = usePersistedState<VendaItem[]>('bj:motorMovimentacoes:vendas', []);
@@ -72,6 +74,34 @@ export function useVendas() {
   function salvarResultado(novosItens: VendaItem[], novoResumo: MotorVendasResumo) {
     setItens(novosItens);
     setResumo(novoResumo);
+  }
+
+  function limpar() {
+    setItens([]);
+    setResumo(null);
+  }
+
+  return { itens, resumo, salvarResultado, limpar };
+}
+
+// Corte ACUMULA (igual à Entrada de notas): cada upload faz merge pela
+// chave (numeroPedido + codigoProduto) — os itens repetidos são
+// substituídos pela versão nova, e os inéditos são somados ao histórico já
+// processado. O resumo é sempre recalculado sobre a lista mesclada inteira.
+export function useCorte() {
+  const [itens, setItens] = usePersistedState<CorteItem[]>('bj:motorMovimentacoes:corte', []);
+  const [resumo, setResumo] = usePersistedState<MotorCorteResumo | null>('bj:motorMovimentacoes:corteResumo', null);
+
+  function chaveDe(it: CorteItem) {
+    return `${it.numeroPedido}|${it.codigoProduto}`;
+  }
+
+  function salvarResultado(novosItens: CorteItem[]) {
+    const chavesNovas = new Set(novosItens.map(chaveDe));
+    const mantidos = itens.filter(it => !chavesNovas.has(chaveDe(it)));
+    const mesclados = [...mantidos, ...novosItens];
+    setItens(mesclados);
+    setResumo(resumirCorte(mesclados));
   }
 
   function limpar() {
