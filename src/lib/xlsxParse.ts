@@ -26,6 +26,26 @@ export async function readWorkbook(file: File): Promise<XLSX.WorkBook> {
   return XLSX.read(buffer, { type: 'array', cellDates: false });
 }
 
+/** Converte data serial do Excel (readWorkbook usa cellDates:false, então
+ * datas chegam como número de dias desde 30/12/1899) para ISO (AAAA-MM-DD).
+ * Aceita também string já formatada (DD/MM/AAAA ou ISO) — nesses casos só
+ * normaliza. Retorna undefined se não conseguir interpretar. */
+export function excelDateToISO(raw: unknown): string | undefined {
+  if (raw === null || raw === undefined || raw === '') return undefined;
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    const ms = Math.round((raw - 25569) * 86400 * 1000); // 25569 = dias entre 1899-12-30 e 1970-01-01
+    const d = new Date(ms);
+    if (Number.isNaN(d.getTime())) return undefined;
+    return d.toISOString().slice(0, 10);
+  }
+  const s = String(raw).trim();
+  const br = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(s);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  return undefined;
+}
+
 /** Retorna a planilha cujo nome bate com algum dos padrões (case-insensitive,
  * substring), ou a primeira planilha do arquivo se nenhuma bater. */
 export function pickSheet(workbook: XLSX.WorkBook, nameContainsAny: string[]): XLSX.WorkSheet {
