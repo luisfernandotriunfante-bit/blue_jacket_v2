@@ -8,15 +8,43 @@
 // (até jul/2026) e serve de base para o futuro Motor 4 (movimentações
 // atuais, pós-virada), que continua a série a partir de ago/2026.
 
+// Classificação da operação (Oper.CFOP do 379 antigo, ou tipoVenda já
+// atribuído pelo Motor 4 a partir de ago/2026). "naoClassificado" cobre
+// códigos que não batem com nenhum prefixo conhecido (ex.: 21201, 19902,
+// 63203) — nunca é misturado com venda/devolução/bonificação, fica visível
+// à parte para conferência manual (financeiro/ERP).
 export type VendaHistoricoMensal = {
   competencia: string; // "AAAA-MM"
   codigoInterno: string; // normalizado (sem zeros à esquerda) — casa com produtoMotorTypes.ProdutoEnriquecido.codigoInterno
   ean?: string;
+  // Totais gerais (soma de venda + devolução + bonificação + não classificado)
   qtdVendida: number;
   valorVendido: number;
   descontoTotal: number;
   pesoLiqKg: number;
   pesoBruKg: number;
+  numLancamentos: number;
+  numClientesDistintos: number;
+  // Quebra por tipo de operação
+  qtdVendaLiquida: number;
+  valorVendaLiquida: number;
+  qtdDevolvida: number;
+  valorDevolvido: number;
+  qtdBonificada: number;
+  valorBonificado: number;
+  qtdNaoClassificada: number;
+  valorNaoClassificado: number;
+};
+
+// Fechamento de Corte (1454) por competência — série nova, sem equivalente
+// no ERP antigo (Corte não existia como relatório separado pré-virada).
+// Gerada ao fechar a competência do Motor 4: cada item acumulado do Corte é
+// atribuído à competência de dataMovimento e agregado por produto.
+export type CorteHistoricoMensal = {
+  competencia: string; // "AAAA-MM"
+  codigoProduto: string;
+  qtdCortada: number;
+  valorTotal: number;
   numLancamentos: number;
   numClientesDistintos: number;
 };
@@ -56,11 +84,16 @@ export type CompraAnualProduto = {
 };
 
 export type MotorHistoricoResumo = {
-  competenciasCobertas: string[]; // ordenado, "AAAA-MM"
+  competenciasCobertas: string[]; // ordenado, "AAAA-MM" (série 379, pré-virada)
   totalRegistrosVenda: number; // linhas cruas lidas do(s) 379
   totalCombinacoesVendaMensal: number; // linhas agregadas (competencia+produto)
   totalNotasEntrada: number;
   totalProdutosComCompraAnual: number; // linhas agregadas do 310
   produtosSomenteEm310: string[]; // codigoInterno presente no 310 mas ausente em todas as competências do 379
   processadoEm: string;
+  // Competências fechadas via Motor 4 (pós-virada, ago/2026 em diante)
+  competenciasFechadasVendas?: string[]; // ordenado, "AAAA-MM"
+  competenciasFechadasCorte?: string[]; // ordenado, "AAAA-MM"
+  // Códigos Oper.CFOP do 379 encontrados sem classificação conhecida (prefixo != 51/13/599)
+  codigosOperNaoClassificados?: string[];
 };
