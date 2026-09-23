@@ -168,3 +168,45 @@ export type MotorVendasResumo = {
   periodoFim?: string;
   processadoEm: string;
 };
+
+// -------------------------------------------------------------------- Corte
+
+// Fonte: relatório 1454 do ERP ("Consultar Corte de Mercadorias — Por
+// Cliente"). Relatório impresso e agrupado por cliente: cada cliente forma
+// um bloco (linha "CLIENTE:" + cabeçalho decorativo + N linhas de item),
+// fechado por uma linha "Total Cliente:" (subtotal — recalculado no
+// resumo, não guardado por item). Os cabeçalhos e o preâmbulo de filtros
+// se repetem a cada quebra de página do relatório impresso; no primeiro
+// bloco de cada página o marcador "CLIENTE:" vem numa coluna diferente dos
+// demais blocos — o parser trata as duas posições.
+//
+// IGUAL à Entrada de notas: existe uma chave linha-a-linha confjC�vel —
+// numeroPedido + codigoProduto (zero colisões nos 1.358 itens da amostra
+// validada) — então cada upload ACUMULA por essa chave: os itens repetidos
+// são substituídos pela versão nova, e os inéditos são somados ao
+// histórico já processado.
+export type CorteItem = {
+  clienteCodigo: string; // casa com codigoWinthor do Motor de Clientes (respeitar a regra de firewall em clienteMotorTypes.ts — não ligar automaticamente)
+  clienteNome?: string;
+  dataMovimento?: string; // ISO
+  numeroPedido: string; // parte da chave de merge
+  codigoProduto: string; // parte da chave de merge — casa com codigoInterno do Motor de Produtos
+  descricaoProduto?: string;
+  embalagem?: string;
+  unidade?: string;
+  qtCorte: number;
+  precoUnitario: number;
+  valorTotal: number;
+  codigoComprador?: string;
+  departamento?: string;
+};
+
+export type MotorCorteResumo = {
+  totalItens: number;
+  totalClientes: number;
+  qtCorteTotal: number;
+  valorTotal: number;
+  periodoInicio?: string;
+  periodoFim?: string;
+  processadoEm: string;
+};
