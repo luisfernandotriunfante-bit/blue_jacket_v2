@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from 'react';
 import { PanelAlert, PanelCard, PanelSectionHeader } from '../../components/Panel';
-import { useCarteira, useEntradaNotas } from '../../data/motorMovimentacoesStore';
-import { processarCarteira, processarEntradaNotas } from '../../lib/motorMovimentacoes';
+import { useCarteira, useEntradaNotas, useVendas } from '../../data/motorMovimentacoesStore';
+import { processarCarteira, processarEntradaNotas, processarVendas } from '../../lib/motorMovimentacoes';
 
 // Administração > Bases > Motor 4 (Motor de Movimentações) — cobre toda
 // movimentação pós-virada do ERP: carteira de pedidos, entrada de notas,
@@ -11,7 +11,7 @@ import { processarCarteira, processarEntradaNotas } from '../../lib/motorMovimen
 // Diferente do Motor Histórico (roda uma única vez), este é RECORRENTE —
 // reprocessado a cada fechamento de competência. Construído em etapas, na
 // ordem combinada com o usuário: Carteira → Entrada de notas (218) →
-// Vendas (8022) → Corte (1454). As duas últimas ainda não existem aqui.
+// Vendas (8022) → Corte (1454). A última ainda não existe aqui.
 export function MotorMovimentacoes() {
   return (
     <PanelCard>
@@ -22,6 +22,7 @@ export function MotorMovimentacoes() {
       />
       <CarteiraSecao />
       <EntradaNotasSecao />
+      <VendasSecao />
     </PanelCard>
   );
 }
@@ -167,6 +168,86 @@ function EntradaNotasSecao() {
           </PanelAlert>
         ) : (
           <PanelAlert tone="info">Nenhuma entrada de notas processada ainda. Envie o relatório 218 e clique em "Processar entrada de notas".</PanelAlert>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Vendas: planilha já tabular (venda/devolução/bonificação, faturado/a
+// faturar). Sem chave linha-a-linha confiável para merge — cada
+// processamento SUBSTITUI a base anterior inteira, como a Carteira.
+function VendasSecao() {
+  const [file, setFile] = useState<File | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { resumo, salvarResultado, limpar } = useVendas();
+
+  function handleFile(e: ChangeEvent<HTMLInputElement>) {
+    setFile(e.target.files?.[0] ?? null);
+  }
+
+  async function handleProcessar() {
+    if (!file) return;
+    setProcessing(true);
+    setError(null);
+    try {
+      const resultado = await processarVendas(file);
+      salvarResultado(resultado.itens, resultado.resumo);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível processar o arquivo enviado.');
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 'var(--bj-space-6)' }}>
+      <div className="panel-upload-slot" style={{ maxWidth: 420 }}>
+        <div className="panel-upload-slot-title">Vendas (relatório 8022)</div>
+        <div className="panel-upload-slot-desc">
+          Venda por produto e CNPJ, com devoluções e bonificações, e visão do que já está faturado e do que está a faturar. Cada envio substitui a
+          base anterior — é sempre a foto do período exportado no relatório.
+        </div>
+        <label className="panel-button panel-upload-button">
+          {file?.name ?? 'Selecionar arquivo (.xls/.xlsx)'}
+          <input type="file" accept=".xls,.xlsx,.csv" onChange={handleFile} style={{ display: 'none' }} />
+        </label>
+      </div>
+      <div className="panel-row-actions" style={{ justifyContent: 'flex-start', marginTop: 'var(--bj-space-2)' }}>
+        <button type="button" className="panel-button panel-button-primary" disabled={processing || !file} onClick={handleProcessar}>
+          {processing ? 'Processando…' : 'Processar vendas'}
+        </button>
+        {resumo ? (
+          <button type="button" className="panel-button" onClick={limpar}>
+            Limpar vendas
+          </button>
+        ) : null}
+      </div>
+      {error ? (
+        <div style={{ marginTop: 'var(--bj-space-4)' }}>
+          <PanelAlert tone="error">{error}</PanelAlert>
+        </div>
+      ) : null}
+      <div style={{ marginTop: 'var(--bj-space-4)' }}>
+        {resumo ? (
+          <PanelAlert tone="success">
+            Vendas processadas em {new Date(resumo.processadoEm).toLocaleString('pt-BR')} — {resumo.totalItens.toLocaleString('pt-BR')} item(ns):{' '}
+            {resumo.vendasQtd.toLocaleString('pt-BR')} venda(s) ({resumo.vendasValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            ), {resumo.devolucoesQtd.toLocaleString('pt-BR')} devolução(ões) (
+            {resumo.devolucoesValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}), {resumo.bonificacoesQtd.toLocaleString('pt-BR')}{' '}
+            bonificação(ões) ({resumo.bonificacoesValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}) — faturado{' '}
+            {resumo.faturadoValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}, a faturar{' '}
+            {resumo.aFaturarValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            {resumo.periodoInicio && resumo.periodoFim
+              ? ` — período de ${new Date(resumo.periodoInicio + 'T00:00:00').toLocaleDateString('pt-BR')} a ${new Date(
+                  resumo.periodoFim + 'T00:00:00',
+                ).toLocaleDateString('pt-BR')}`
+              : ''}
+            .
+          </PanelAlert>
+        ) : (
+          <PanelAlert tone="info">Nenhuma venda processada ainda. Envie o relatório 8022 e clique em "Processar vendas".</PanelAlert>
         )}
       </div>
     </div>
