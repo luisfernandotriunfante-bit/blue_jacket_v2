@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { PanelAlert, PanelCard, PanelSectionHeader } from '../../components/Panel';
 import { useMotorProdutos } from '../../data/motorProdutosStore';
 import { processarMotorProdutos, type MotorProdutosInput } from '../../lib/motorProdutos';
+import { downloadCsv } from '../../lib/exportCsv';
 
 type SlotKey = keyof MotorProdutosInput;
 
@@ -108,6 +109,15 @@ export function MotorProdutos() {
         >
           {processing ? 'Processando…' : 'Processar e mesclar'}
         </button>
+        {produtos.length > 0 ? (
+          <button
+            type="button"
+            className="panel-button"
+            onClick={() => downloadCsv(`motor-produtos-${new Date().toISOString().slice(0, 10)}.csv`, produtos)}
+          >
+            Baixar planilha (CSV)
+          </button>
+        ) : null}
         {produtos.length > 0 ? (
           <button type="button" className="panel-button" onClick={limpar}>
             Limpar base consolidada
