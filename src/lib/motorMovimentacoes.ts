@@ -5,14 +5,16 @@
 // cada fonte (a carteira substitui; as demais acumulam por competência).
 //
 // Ordem de construção (definida com o usuário): Carteira → Entrada de
-// notas (218) → Vendas (8022) → Corte (1454). As três últimas ainda não
-// foram implementadas nesta primeira etapa.
+// notas (218) → Vendas (8022) → Corte (1454). A última ainda não foi
+// implementada nesta primeira etapa.
 
 import type {
   CarteiraItem,
   EntradaNotaItem,
   MotorCarteiraResumo,
   MotorEntradaNotasResumo,
+  MotorVendasResumo,
+  VendaItem,
 } from '../data/motorMovimentacoesTypes';
 import { excelDateToISO, extractRecords, pickSheet, readWorkbook, sheetToMatrix } from './xlsxParse';
 
@@ -244,6 +246,121 @@ export function resumirEntradaNotas(itens: EntradaNotaItem[]): MotorEntradaNotas
     valorTotalNotas: Math.round(valorTotalNotas * 100) / 100,
     periodoEntradaInicio: datas[0],
     periodoEntradaFim: datas[datas.length - 1],
+    processadoEm: new Date().toISOString(),
+  };
+}
+
+// -------------------------------------------------------------------- Vendas
+
+// Relatório 8022: tabela limpa (uma linha por item de pedido/nota) — usa
+// o mesmo infra genérico da Carteira (extractRecords). Ver o comentário do
+// tipo VendaItem em motorMovimentacoesTypes.ts sobre por que esta fonte
+// SUBSTITUI a cada upload, em vez de acumular como a Entrada de notas.
+export async function processarVendas(file: File): Promise<{ itens: VendaItem[]; resumo: MotorVendasResumo }> {
+  const wb = await readWorkbook(file);
+  const sheet = pickSheet(wb, ['vendas', 'sheet1']);
+  const matrix = sheetToMatrix(sheet);
+  const records = extractRecords(matrix, ['numeropedwinthor', 'codprodwinthor']);
+
+  const itens: VendaItem[] = [];
+  for (const rec of records) {
+    const codCliente = str(rec.codcliente);
+    const numeroPedWinthor = str(rec.numeropedwinthor);
+    const codProdWinthor = str(rec.codprodwinthor);
+    if (!codCliente || !numeroPedWinthor || !codProdWinthor) continue; // linha inválida/rodapé
+
+    const tipoVenda = str(rec.tipovenda) ?? 'VENDA';
+
+    itens.push({
+      filial: str(rec.filial),
+      fornecedor: num(rec.fornecedor) || undefined,
+      dataMovimento: excelDateToISO(rec.datamovimento),
+      codCliente,
+      nomeCliente: str(rec.nomecliente),
+      cnpjCpfCliente: str(rec.cnpjcpfcliente),
+      segmentoCnae: str(rec.segmentoatuacaocnae),
+      cidade: str(rec.cidade),
+      cep: str(rec.cep),
+      uf: str(rec.uf),
+      numeroPedWinthor,
+      numeroPedRca: str(rec.numeropedrca),
+      dataEmissaoNf: excelDateToISO(rec.dataemissaonf),
+      numeroNotaFiscal: str(rec.numeronotafiscal),
+      origemPedido: str(rec.origempedido),
+      statusPedido: str(rec.statuspedido),
+      statusBloqueio: str(rec.statusbloqueio),
+      codVendedor: str(rec.codvendedor),
+      vendedor: str(rec.vendedor),
+      codSupervisor: str(rec.codsupervisor),
+      supervisor: str(rec.supervisor),
+      codigoFabricante: str(rec.codigofabricante),
+      eanProduto: str(rec.eanproduto),
+      eanCadastro: str(rec.eancadastro),
+      codProdWinthor,
+      descricaoProduto: str(rec.descricaoproduto),
+      caixasVendidas: num(rec.caixasvendidas),
+      unidadesVendidas: num(rec.unidadesvendidas),
+      pesoBrutoKg: num(rec.pesobrutokg),
+      pesoLiquidoKg: num(rec.pesoliquidokg),
+      situacaoPeso: str(rec.situacaopeso),
+      valorMercadoria: num(rec.valormercadoriar),
+      valorNota: num(rec.valornotar),
+      tipoVenda,
+    });
+  }
+
+  const resumo = resumirVendas(itens);
+  return { itens, resumo };
+}
+
+export function resumirVendas(itens: VendaItem[]): MotorVendasResumo {
+  let vendasQtd = 0;
+  let vendasValor = 0;
+  let devolucoesQtd = 0;
+  let devolucoesValor = 0;
+  let bonificacoesQtd = 0;
+  let bonificacoesValor = 0;
+  let faturadoValor = 0;
+  let aFaturarValor = 0;
+  let unidadesVendidasTotal = 0;
+
+  for (const it of itens) {
+    unidadesVendidasTotal += it.unidadesVendidas;
+    if (it.tipoVenda === 'DEVOLUCAO') {
+      devolucoesQtd++;
+      devolucoesValor += it.valorNota;
+    } else if (it.tipoVenda === 'BONIFICACAO') {
+      bonificacoesQtd++;
+      bonificacoesValor += it.valorNota;
+    } else {
+      vendasQtd++;
+      vendasValor += it.valorNota;
+    }
+    if (it.statusPedido === 'A FATURAR') {
+      aFaturarValor += it.valorNota;
+    } else {
+      faturadoValor += it.valorNota;
+    }
+  }
+
+  const datas = itens
+    .map(it => it.dataMovimento)
+    .filter((d): d is string => !!d)
+    .sort();
+
+  return {
+    totalItens: itens.length,
+    vendasQtd,
+    vendasValor: Math.round(vendasValor * 100) / 100,
+    devolucoesQtd,
+    devolucoesValor: Math.round(devolucoesValor * 100) / 100,
+    bonificacoesQtd,
+    bonificacoesValor: Math.round(bonificacoesValor * 100) / 100,
+    faturadoValor: Math.round(faturadoValor * 100) / 100,
+    aFaturarValor: Math.round(aFaturarValor * 100) / 100,
+    unidadesVendidasTotal: Math.round(unidadesVendidasTotal * 100) / 100,
+    periodoInicio: datas[0],
+    periodoFim: datas[datas.length - 1],
     processadoEm: new Date().toISOString(),
   };
 }
