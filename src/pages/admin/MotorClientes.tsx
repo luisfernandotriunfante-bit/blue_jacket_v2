@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { PanelAlert, PanelCard, PanelSectionHeader } from '../../components/Panel';
 import { useMotorClientes } from '../../data/motorClientesStore';
 import { processarMotorClientes } from '../../lib/motorClientes';
+import { downloadCsv } from '../../lib/exportCsv';
 
 type SlotKey = 'baseInterna1203' | 'carteiraIntegradora' | 'basePremissasColgate';
 
@@ -93,6 +94,15 @@ export function MotorClientes() {
         >
           {processing ? 'Processando…' : 'Processar e mesclar'}
         </button>
+        {clientes.length > 0 ? (
+          <button
+            type="button"
+            className="panel-button"
+            onClick={() => downloadCsv(`motor-clientes-${new Date().toISOString().slice(0, 10)}.csv`, clientes)}
+          >
+            Baixar planilha (CSV)
+          </button>
+        ) : null}
         {clientes.length > 0 ? (
           <button type="button" className="panel-button" onClick={limpar}>
             Limpar base consolidada
