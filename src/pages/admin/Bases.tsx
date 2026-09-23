@@ -1,5 +1,6 @@
 import { MotorClientes } from './MotorClientes';
 import { MotorProdutos } from './MotorProdutos';
+import { MotorHistorico } from './MotorHistorico';
 
 // Administração > Bases — cada motor de mesclagem/processamento de dados
 // (Motor 1, Motor 2, ...) vive aqui como uma seção própria, na ordem em que
@@ -12,6 +13,8 @@ export function AdminBases() {
       <MotorClientes />
       {/* Motor 2 — Motor de Produtos */}
       <MotorProdutos />
+      {/* Motor 3 — Motor Histórico */}
+      <MotorHistorico />
     </>
   );
 }
