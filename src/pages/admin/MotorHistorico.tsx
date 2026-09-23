@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { PanelAlert, PanelCard, PanelSectionHeader } from '../../components/Panel';
 import { useMotorHistorico } from '../../data/motorHistoricoStore';
 import { processarMotorHistorico } from '../../lib/motorHistorico';
+import { downloadCsv } from '../../lib/exportCsv';
 
 // Administração > Bases > Motor 3 (Motor Histórico) — última fotografia do
 // ERP antigo (fontes variadas), para consulta de dados de competências
@@ -25,7 +26,8 @@ export function MotorHistorico() {
   const [anoCompras310, setAnoCompras310] = useState('2026');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { carregando, resumo, salvarResultado, limpar } = useMotorHistorico();
+  const { carregando, resumo, vendasMensais, notasEntrada, comprasAnuais, corteMensal, salvarResultado, limpar } = useMotorHistorico();
+  const hoje = new Date().toISOString().slice(0, 10);
 
   const hasAnyFile = Boolean(vendas2026 || vendas2025 || notas12322 || compras310);
 
@@ -115,6 +117,26 @@ export function MotorHistorico() {
         >
           {processing ? 'Processando…' : 'Processar e mesclar'}
         </button>
+        {resumo && vendasMensais.length > 0 ? (
+          <button type="button" className="panel-button" onClick={() => downloadCsv(`motor-historico-vendas-mensais-${hoje}.csv`, vendasMensais)}>
+            Baixar vendas mensais (CSV)
+          </button>
+        ) : null}
+        {resumo && notasEntrada.length > 0 ? (
+          <button type="button" className="panel-button" onClick={() => downloadCsv(`motor-historico-notas-entrada-${hoje}.csv`, notasEntrada)}>
+            Baixar notas de entrada (CSV)
+          </button>
+        ) : null}
+        {resumo && comprasAnuais.length > 0 ? (
+          <button type="button" className="panel-button" onClick={() => downloadCsv(`motor-historico-compras-anuais-${hoje}.csv`, comprasAnuais)}>
+            Baixar compras anuais (CSV)
+          </button>
+        ) : null}
+        {resumo && corteMensal.length > 0 ? (
+          <button type="button" className="panel-button" onClick={() => downloadCsv(`motor-historico-corte-mensal-${hoje}.csv`, corteMensal)}>
+            Baixar corte mensal (CSV)
+          </button>
+        ) : null}
         {resumo ? (
           <button type="button" className="panel-button" onClick={limpar}>
             Limpar base histórica
