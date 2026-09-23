@@ -7,7 +7,14 @@
 
 import { resumirEntradaNotas } from '../lib/motorMovimentacoes';
 import { usePersistedState } from '../lib/storage';
-import type { CarteiraItem, EntradaNotaItem, MotorCarteiraResumo, MotorEntradaNotasResumo } from './motorMovimentacoesTypes';
+import type {
+  CarteiraItem,
+  EntradaNotaItem,
+  MotorCarteiraResumo,
+  MotorEntradaNotasResumo,
+  MotorVendasResumo,
+  VendaItem,
+} from './motorMovimentacoesTypes';
 
 export function useCarteira() {
   const [itens, setItens] = usePersistedState<CarteiraItem[]>('bj:motorMovimentacoes:carteira', []);
@@ -45,6 +52,26 @@ export function useEntradaNotas() {
     const mesclados = [...mantidos, ...novosItens];
     setItens(mesclados);
     setResumo(resumirEntradaNotas(mesclados));
+  }
+
+  function limpar() {
+    setItens([]);
+    setResumo(null);
+  }
+
+  return { itens, resumo, salvarResultado, limpar };
+}
+
+// Vendas SUBSTITUI a cada upload (como a Carteira) — não há chave
+// linha-a-linha confjC�vel para merge nesta fonte (ver comentário de
+// VendaItem em motorMovimentacoesTypes.ts).
+export function useVendas() {
+  const [itens, setItens] = usePersistedState<VendaItem[]>('bj:motorMovimentacoes:vendas', []);
+  const [resumo, setResumo] = usePersistedState<MotorVendasResumo | null>('bj:motorMovimentacoes:vendasResumo', null);
+
+  function salvarResultado(novosItens: VendaItem[], novoResumo: MotorVendasResumo) {
+    setItens(novosItens);
+    setResumo(novoResumo);
   }
 
   function limpar() {
