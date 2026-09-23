@@ -2,6 +2,10 @@ import { useState, type ChangeEvent } from 'react';
 import { PanelAlert, PanelCard, PanelSectionHeader } from '../../components/Panel';
 import { useCarteira, useCorte, useEntradaNotas, useVendas } from '../../data/motorMovimentacoesStore';
 import { processarCarteira, processarCorte, processarEntradaNotas, processarVendas } from '../../lib/motorMovimentacoes';
+import { useCompetenciaMotor4 } from '../../data/competenciaMotor4Store';
+import { useMotorHistorico } from '../../data/motorHistoricoStore';
+import { agregarFechamentoCorte, agregarFechamentoVendas } from '../../lib/fechamentoCompetencia';
+import { formatCompetencia } from '../../lib/competencia';
 
 // Administração > Bases > Motor 4 (Motor de Movimentações) — cobre toda
 // movimentação pós-virada do ERP: carteira de pedidos, entrada de notas,
@@ -22,11 +26,99 @@ export function MotorMovimentacoes() {
         title="Motor de Movimentações"
         description="Movimentações atuais (pós-virada do ERP): carteira, entrada de notas, vendas/devoluções/bonificações e cortes. Recorrente — reprocesse a cada fechamento de competência. Roda inteiramente no navegador — nenhum arquivo sai daqui."
       />
+      <FechamentoCompetenciaSecao />
       <CarteiraSecao />
       <EntradaNotasSecao />
       <VendasSecao />
       <CorteSecao />
     </PanelCard>
+  );
+}
+
+// Fechamento de competência: trava Vendas e Corte do mês encerrado como
+// histórico permanente (Motor Histórico), zera a Vendas ao vivo (próximo
+// 8022 começa do zero) e retira do Corte ao vivo só os itens da competência
+// fechada (o resto continua acumulando). Sempre manual — o aviso automático
+// só avisa quando o relógio já virou o mês sem o fechamento ter sido feito.
+function FechamentoCompetenciaSecao() {
+  const { competenciaAtual, historico, viradaPendente, registrarFechamento } = useCompetenciaMotor4();
+  const vendas = useVendas();
+  const corte = useCorte();
+  const motorHistorico = useMotorHistorico();
+  const [fechando, setFechando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFechar() {
+    setFechando(true);
+    setError(null);
+    try {
+      const registrosVendas = agregarFechamentoVendas(vendas.itens, competenciaAtual);
+      const { registros: registrosCorte, itensRestantes: corteRestante } = agregarFechamentoCorte(corte.itens, competenciaAtual);
+
+      await motorHistorico.fecharCompetenciaVendas(competenciaAtual, registrosVendas);
+      await motorHistorico.fecharCompetenciaCorte(competenciaAtual, registrosCorte);
+
+      vendas.limpar(); // Vendas é foto do período — zera, próximo 8022 começa do zero
+      corte.definirItens(corteRestante); // Corte continua acumulando — só sai o que foi fechado
+
+      registrarFechamento(registrosVendas.length, registrosCorte.length);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível fechar a competência.');
+    } finally {
+      setFechando(false);
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 'var(--bj-space-4)' }}>
+      <div className="panel-upload-slot" style={{ maxWidth: 520 }}>
+        <div className="panel-upload-slot-title">Fechamento de competência</div>
+        <div className="panel-upload-slot-desc">
+          Competência aberta: <strong>{formatCompetencia(competenciaAtual)}</strong>. Ao fechar, Vendas e Corte da competência são gravados como
+          histórico permanente (Motor Histórico), Vendas é zerada (o próximo envio do 8022 começa do zero) e Corte continua acumulando só com o que
+          ainda não foi fechado.
+        </div>
+      </div>
+      {viradaPendente ? (
+        <div style={{ marginTop: 'var(--bj-space-2)' }}>
+          <PanelAlert tone="warning">
+            O mês já virou e {formatCompetencia(competenciaAtual)} ainda não foi fechada. Feche a competência quando Vendas e Corte deste mês
+            estiverem completos.
+          </PanelAlert>
+        </div>
+      ) : null}
+      <div className="panel-row-actions" style={{ justifyContent: 'flex-start', marginTop: 'var(--bj-space-2)' }}>
+        <button
+          type="button"
+          className="panel-button panel-button-primary"
+          disabled={fechando || motorHistorico.carregando}
+          onClick={handleFechar}
+        >
+          {motorHistorico.carregando ? 'Carregando histórico…' : fechando ? 'Fechando…' : `Fechar competência (${formatCompetencia(competenciaAtual)})`}
+        </button>
+      </div>
+      {error ? (
+        <div style={{ marginTop: 'var(--bj-space-4)' }}>
+          <PanelAlert tone="error">{error}</PanelAlert>
+        </div>
+      ) : null}
+      {historico.length > 0 ? (
+        <div style={{ marginTop: 'var(--bj-space-4)' }}>
+          <PanelAlert tone="success">
+            Competências já fechadas: {historico
+              .slice()
+              .reverse()
+              .map(
+                h =>
+                  `${formatCompetencia(h.competencia)} (${h.produtosVendas.toLocaleString('pt-BR')} produto(s) em Vendas, ${h.produtosCorte.toLocaleString(
+                    'pt-BR',
+                  )} em Corte, em ${new Date(h.fechadoEm).toLocaleString('pt-BR')})`,
+              )
+              .join(' · ')}
+          </PanelAlert>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -178,7 +270,7 @@ function EntradaNotasSecao() {
 }
 
 // Vendas: planilha já tabular (venda/devolução/bonificação, faturado/a
-// faturar). Sem chave linha-a-linha confjC�vel para merge — cada
+// faturar). Sem chave linha-a-linha confiável para merge — cada
 // processamento SUBSTITUI a base anterior inteira, como a Carteira.
 function VendasSecao() {
   const [file, setFile] = useState<File | null>(null);
