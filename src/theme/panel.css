@@ -167,3 +167,10 @@
 .panel-alert-error { border-color: var(--bj-red); color: var(--bj-text-dim); }
 
 .panel-muted { color: var(--bj-muted); font-size: var(--bj-font-body-sm); }
+
+/* Motor de Clientes — slots de upload de arquivo (label estilizada como
+ * botão, input nativo escondido por trás). */
+.panel-upload-slot { display: flex; flex-direction: column; gap: 6px; }
+.panel-upload-slot-title { font-size: 13px; font-weight: var(--bj-weight-semibold); color: var(--bj-text-strong); }
+.panel-upload-slot-desc { font-size: 11.5px; color: var(--bj-muted-2); line-height: 1.5; }
+.panel-upload-button { display: inline-flex; align-items: center; justify-content: flex-start; text-align: left; font-weight: var(--bj-weight-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
